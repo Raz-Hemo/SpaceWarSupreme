@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "GameException.h"
 #include "WindowManager.h"
-#include "Renderer.h"
 #include "InputModule.h"
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
@@ -17,14 +16,12 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
 	{
 		InputModule input;
 		WindowManager window(hinstance, nCmdShow, input);
-		Renderer renderer(window.WindowHandle());
-		GUI gui;
 
 		// Handle input
-		input.kbhook = [&](const Constants::Hotkeys& hk) { soundplayer.HandleEvent(hk); };
-		input.mousehook = [&](const MouseEvent& e) { gui.HandleEvent(e); };
+		input.kbhook = [&](const KeyboardEvent& e) {};
+		input.mousehook = [&](const MouseEvent& e) {};
 		input.resizehook = [&](int x, int y) {
-			renderer.HandleResize(x, y);
+			//renderer.HandleResize(x, y);
 		};
 
 		while (true)
@@ -40,16 +37,16 @@ int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
 			}
 			else
 			{
-				renderer.Frame();
+				Sleep(30); //renderer.Frame();
 			}
 		}
 	}
 	catch (const GameException& e)
 	{
-		MessageBoxW(
+		MessageBoxA(
 			NULL,
-			e.what().c_str(),
-			L"Fatal error",
+			e.what(),
+			"Fatal error",
 			MB_OK | MB_ICONERROR | MB_SERVICE_NOTIFICATION);
 		return 1;
 	}

@@ -35,13 +35,12 @@ using std::wofstream;
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "bass.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
 namespace Constants
 {
-	const wchar_t ProgramName[] = L"Space War Supreme!";
-	const wchar_t ConfigPath[] = L"config.txt";
+	const string ProgramName = "Space War Supreme!";
+	const string ConfigPath = "config.txt";
 
 	constexpr float Tau = 6.283185f;
 
@@ -50,5 +49,5 @@ namespace Constants
 	constexpr int WindowHeight = 600;
 }
 
-void FatalError(const wstring& error);
+void FatalError(const string& error);
 bool isDebug();

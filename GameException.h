@@ -5,11 +5,11 @@
 class GameException : std::exception
 {
 private:
-	const wstring _what;
+	const string _what;
 
 public:
-	GameException(const wstring& what);
+	GameException(const string& what);
 	~GameException();
 
-	const wstring& what() const;
+	const char* what() const;
 };

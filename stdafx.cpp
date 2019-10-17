@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "GameException.h"
 
-void FatalError(const wstring& error)
+void FatalError(const string& error)
 {
 	throw GameException(error);
 }
