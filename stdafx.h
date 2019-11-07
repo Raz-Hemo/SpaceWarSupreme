@@ -1,21 +1,22 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-#include<Windows.h>
-#include<d3d11.h>
-#include<d3dcompiler.h>
-#include<exception>
-#include<algorithm>
-#include<iterator>
-#include<functional>
-#include<fstream>
-#include<string>
-#include<memory>
-#include<map>
-#include<unordered_map>
-#include<list>
-#include<vector>
-#include<time.h>
+#include <Windows.h>
+#include <d3d11.h>
+#include <d3dcompiler.h>
+#include <DirectXMath.h>
+#include <exception>
+#include <algorithm>
+#include <iterator>
+#include <functional>
+#include <fstream>
+#include <string>
+#include <memory>
+#include <map>
+#include <unordered_map>
+#include <list>
+#include <vector>
+#include <time.h>
 
 using std::shared_ptr;
 using std::make_shared;

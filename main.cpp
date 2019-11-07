@@ -2,6 +2,7 @@
 #include "GameException.h"
 #include "WindowManager.h"
 #include "InputModule.h"
+#include "Renderer.h"
 
 int WINAPI WinMain(HINSTANCE hinstance, HINSTANCE hPrevInstance,
 	LPSTR lpCmdLine, int nCmdShow)

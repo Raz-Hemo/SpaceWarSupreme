@@ -114,8 +114,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GameException.cpp" />
+    <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="GameWorld.cpp" />
     <ClCompile Include="InputModule.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Renderable.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -124,6 +128,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameException.h" />
+    <ClInclude Include="GameObject.h" />
+    <ClInclude Include="GameWorld.h" />
+    <ClInclude Include="Renderable.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="InputModule.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
