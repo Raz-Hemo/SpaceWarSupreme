@@ -13,7 +13,7 @@ fn main()
     logger!().warning("i");
     logger!().warning("j");
     logger!().warning("k");
-    println!("{:?}", logger!());
+    panic!("ASDASDASDASDASD");
 /*
     let mut rng = thread_rng();
     let mut galaxy: Galaxy = Galaxy::new();

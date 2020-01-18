@@ -78,7 +78,56 @@ impl CircularLog {
 }
 
 lazy_static! {
-    pub static ref LOGGER: Mutex<CircularLog> = Mutex::from(CircularLog::new());
+    pub static ref LOGGER: Mutex<CircularLog> = {
+        let result = Mutex::from(CircularLog::new());
+
+        std::panic::set_hook(Box::new(|panic_info| {
+            let (filename, line) =
+            panic_info.location().map(|loc| (loc.file(), loc.line()))
+                .unwrap_or(("<unknown>", 0));
+
+            let cause = panic_info.payload().downcast_ref::<String>().map(String::deref);
+            let cause = cause.unwrap_or_else(||
+                panic_info.payload().downcast_ref::<&str>().map(|s| *s)
+                    .unwrap_or("<cause unknown>")
+            );
+
+            // Attempt to acquire logger
+            let locked_logger = LOGGER.lock();
+            if locked_logger.is_err() {
+                return;
+            }
+            let mut locked_logger = locked_logger.unwrap();
+
+            // Write panic
+            locked_logger.error(&format!("A panic occurred at {}:{}: {}", filename, line, cause)[..]);
+
+            // Open a crash report file
+            use std::io::{Write};
+            let f = std::fs::File::create(format!("./crash_reports/{}", 
+                                                  Local::now().format("%Y-%m-%d %H-%M-%S.txt")
+            ));
+            if f.is_err() {
+                return;
+            }
+            let mut f = std::io::BufWriter::new(f.unwrap());
+
+            // Write the logs in order. TODO should implement iteration on circular logger
+            // directly because this is bugged rn
+            for logline in &locked_logger.lines {
+                if writeln!(f, "{}", logline.line).is_err() {
+                    continue;
+                }
+            }
+            println!("hi9");
+            // Best effort flush
+            if f.flush().is_err() {
+                return;
+            }
+        }));
+
+        result
+    };
 }
 
 #[macro_export]
