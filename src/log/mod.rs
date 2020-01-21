@@ -29,6 +29,11 @@ pub struct CircularLog
     current_pos: usize,
 }
 
+pub struct CircularLogIter<'a> {
+    _logger: &'a CircularLog,
+    current_index: usize,
+}
+
 impl CircularLog {
     pub fn new () -> CircularLog {
         if MAX_LOG_LINES == 0 {
@@ -38,6 +43,13 @@ impl CircularLog {
         CircularLog {
             lines: vec![],
             current_pos: 0,
+        }
+    }
+
+    pub fn iter(&self) -> CircularLogIter {
+        CircularLogIter {
+            _logger: self, 
+            current_index: self.current_pos
         }
     }
 
@@ -74,6 +86,23 @@ impl CircularLog {
     }
     pub fn info(&mut self, line: &str) {
         self.write_log(LogLevel::Info, line);
+    }
+}
+
+impl<'a> Iterator for CircularLogIter<'a> {
+    type Item = &'a CircularLogLine;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        println!("{} {}", self.current_index, self._logger.current_pos);
+        self.current_index = (self.current_index + 1) % MAX_LOG_LINES;
+        println!("{} {}", self.current_index, self._logger.current_pos);
+        if self.current_index == self._logger.current_pos {
+            println!("hi");
+            None
+        }
+        else {
+            Some(&self._logger.lines[self.current_index])
+        }
     }
 }
 
@@ -114,12 +143,12 @@ lazy_static! {
 
             // Write the logs in order. TODO should implement iteration on circular logger
             // directly because this is bugged rn
-            for logline in &locked_logger.lines {
+            for logline in locked_logger.iter() {
                 if writeln!(f, "{}", logline.line).is_err() {
                     continue;
                 }
             }
-            println!("hi9");
+            
             // Best effort flush
             if f.flush().is_err() {
                 return;
