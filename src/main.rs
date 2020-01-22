@@ -1,19 +1,10 @@
 mod log;
+mod gameplay;
+use gameplay::mapgen::execute_map_generator;
 
 fn main()
 {
-    logger!().error("a");
-    logger!().info("b");
-    logger!().warning("c");
-    logger!().error("d");
-    logger!().info("e");
-    logger!().warning("f");
-    logger!().error("g");
-    logger!().info("h");
-    logger!().warning("i");
-    logger!().warning("j");
-    logger!().warning("k");
-    panic!("ASDASDASDASDASD");
+    println!("{:?}", execute_map_generator("./scripts/mapgen/elliptical.rhai"));
 /*
     let mut rng = thread_rng();
     let mut galaxy: Galaxy = Galaxy::new();
