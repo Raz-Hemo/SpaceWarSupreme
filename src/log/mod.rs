@@ -31,7 +31,7 @@ pub struct CircularLog
 
 pub struct CircularLogIter<'a> {
     _logger: &'a CircularLog,
-    current_index: usize,
+    iteration_count: usize,
 }
 
 impl CircularLog {
@@ -43,13 +43,6 @@ impl CircularLog {
         CircularLog {
             lines: vec![],
             current_pos: 0,
-        }
-    }
-
-    pub fn iter(&self) -> CircularLogIter {
-        CircularLogIter {
-            _logger: self, 
-            current_index: self.current_pos
         }
     }
 
@@ -89,19 +82,30 @@ impl CircularLog {
     }
 }
 
+impl<'a> IntoIterator for &'a CircularLog {
+    type Item = &'a CircularLogLine;
+    type IntoIter = CircularLogIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        CircularLogIter {
+            _logger: self, 
+            iteration_count: 0
+        }
+    }
+}
+
 impl<'a> Iterator for CircularLogIter<'a> {
     type Item = &'a CircularLogLine;
 
     fn next(&mut self) -> Option<Self::Item> {
-        println!("{} {}", self.current_index, self._logger.current_pos);
-        self.current_index = (self.current_index + 1) % MAX_LOG_LINES;
-        println!("{} {}", self.current_index, self._logger.current_pos);
-        if self.current_index == self._logger.current_pos {
-            println!("hi");
+        if self.iteration_count == self._logger.lines.len() {
             None
         }
         else {
-            Some(&self._logger.lines[self.current_index])
+            self.iteration_count += 1;
+            Some(&self._logger.lines[
+                (self.iteration_count + self._logger.current_pos - 1) % self._logger.lines.len()
+                ])
         }
     }
 }
@@ -143,8 +147,8 @@ lazy_static! {
 
             // Write the logs in order. TODO should implement iteration on circular logger
             // directly because this is bugged rn
-            for logline in locked_logger.iter() {
-                if writeln!(f, "{}", logline.line).is_err() {
+            for logline in locked_logger.into_iter() {
+                if writeln!(f, "{}", &logline.line).is_err() {
                     continue;
                 }
             }
