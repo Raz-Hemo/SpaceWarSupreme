@@ -1,13 +1,5 @@
 use std::f64::consts::PI as pi;
 
-pub struct MainSequenceStar
-{
-    radius: f64, // in km
-    temperature: f64, // in kelvin
-    pos: (f32, f32), // relative to center of galaxy
-    name: String,
-}
-
 pub enum StarClass
 {
     ClassO,

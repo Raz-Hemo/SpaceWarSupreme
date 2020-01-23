@@ -1,6 +1,6 @@
 extern crate rhai;
 
-use crate::scripting;
+use crate::gameplay::types::Star;
 
 use std::fs;
 use rhai::{RegisterFn};
@@ -36,21 +36,18 @@ pub fn get_mapgen_scripts() -> Vec<String>
     result
 }
 
-#[derive(Debug)]
-#[derive(Clone)]
-pub struct Star {
-    x: f32,
-}
-
 pub fn generate_star() -> Star {
     Star {
-        x: 5.0,
+        radius: 1.0f64,
+        temperature: 5000.0f64,
+        pos: (0.0, 0.0),
+        name: String::from("test"),
     }
 }
 
 pub fn execute_map_generator(script_path: &str) -> Result<Vec<Star>, Box<dyn std::error::Error + 'static>> {
     let script: String = fs::read_to_string(script_path)?;
-    let mut engine = scripting::new_engine();
+    let mut engine = crate::scripting::new_engine();
 
     engine.register_fn("make_random_star", generate_star);
     engine.register_fn("make_star_vector", Vec::new as fn()->Vec<Star>);
