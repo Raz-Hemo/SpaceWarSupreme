@@ -1,5 +1,13 @@
-use std::fmt::Display;
+use crate::log;
 
-pub fn print_console<T: Display>(x: &T) -> () {
-    println!("{}", x)
+pub fn error(x: &str) -> () {
+    logger!().error(x);
+}
+
+pub fn warning(x: &str) -> () {
+    logger!().warning(x);
+}
+
+pub fn info(x: &str) -> () {
+    logger!().info(x);
 }

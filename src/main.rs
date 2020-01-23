@@ -1,5 +1,7 @@
+#[macro_use]
 mod log;
 mod gameplay;
+mod scripting;
 use gameplay::mapgen::execute_map_generator;
 
 fn main()

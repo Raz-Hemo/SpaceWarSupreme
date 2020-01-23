@@ -1,7 +1,9 @@
 extern crate rhai;
 
+use crate::scripting;
+
 use std::fs;
-use rhai::{Engine, RegisterFn};
+use rhai::{RegisterFn};
 
 
 // Returns a list of all the installed scripts for generating a map
@@ -48,7 +50,7 @@ pub fn generate_star() -> Star {
 
 pub fn execute_map_generator(script_path: &str) -> Result<Vec<Star>, Box<dyn std::error::Error + 'static>> {
     let script: String = fs::read_to_string(script_path)?;
-    let mut engine = Engine::new();
+    let mut engine = scripting::new_engine();
 
     engine.register_fn("make_random_star", generate_star);
     engine.register_fn("make_star_vector", Vec::new as fn()->Vec<Star>);

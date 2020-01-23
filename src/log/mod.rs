@@ -163,7 +163,6 @@ lazy_static! {
     };
 }
 
-#[macro_export]
 macro_rules! logger {
     () => {
         log::LOGGER.lock().unwrap()
