@@ -2,11 +2,12 @@
 mod log;
 mod gameplay;
 mod scripting;
-use gameplay::mapgen::execute_map_generator;
+mod utils;
 
 fn main()
 {
-    println!("{:?}", execute_map_generator("./scripts/mapgen/elliptical.rhai"));
+    log::logger().info("Starting Space War Supreme!");
+    println!("{:?}", gameplay::mapgen::poisson_distribution(100));
 /*
     let mut rng = thread_rng();
     let mut galaxy: Galaxy = Galaxy::new();

@@ -7,11 +7,32 @@
         "label": "cargo run",
         "type": "shell",
         "command": "cargo",
-        "args": ["run", "--release"],
+        "args": [
+          "run",
+          "--release"
+        ],
         "group": {
           "kind": "build",
           "isDefault": true
         }
+      },
+      {
+        "label": "cargo debug",
+        "type": "shell",
+        "command": "cargo",
+        "options": {
+          "env": {
+            "RUST_BACKTRACE": "full"
+          }
+        },
+        "args": [
+          "run"
+        ],
+        "group": {
+          "kind": "test",
+          "isDefault": true
+        },
+        "problemMatcher": []
       }
     ]
   }

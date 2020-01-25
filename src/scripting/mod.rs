@@ -9,6 +9,18 @@ pub fn new_engine() -> Engine {
     engine.register_fn("error", basic_funcs::error);
     engine.register_fn("warning", basic_funcs::warning);
     engine.register_fn("info", basic_funcs::info);
+    engine.register_fn("rand_range", basic_funcs::rand_range as fn(i64, i64) -> i64);
+    engine.register_fn("rand_range", basic_funcs::rand_range as fn(f64, f64) -> f64);
 
     engine
+}
+
+pub fn get_scripts_in_folder<P: AsRef<std::path::Path>>(path: P) -> Vec<std::path::PathBuf> {
+    match std::fs::read_dir(path.as_ref()) {
+        Err(_) => vec![],                                // Directory opened?
+        Ok(dir) => dir.filter_map(|p| p.ok())            // Entry successfully read?
+                      .map(|p| p.path())                 // DirEntry -> Path
+                      .filter(|p| p.ends_with(".rhai"))  // Path is a rhai script?
+                      .collect()    // Path is returned!
+    }
 }

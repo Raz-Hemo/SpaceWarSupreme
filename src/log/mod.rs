@@ -1,6 +1,6 @@
 // This module implements a circular log. After X lines are written, 
 // new lines overwrite the oldest ones.
-// Usage is "mod log" to include and " logger!().info("asd") " to write lines
+// Usage is "use crate::log" to include and "logger().info("asd") " to write lines
 extern crate chrono;
 use chrono::Local;
 use std::sync::Mutex;
@@ -163,8 +163,6 @@ lazy_static! {
     };
 }
 
-macro_rules! logger {
-    () => {
-        log::LOGGER.lock().unwrap()
-    };
+pub fn logger() -> std::sync::MutexGuard<'static, CircularLog> {
+    LOGGER.lock().unwrap()
 }
