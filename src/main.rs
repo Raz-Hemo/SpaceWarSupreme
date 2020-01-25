@@ -7,7 +7,8 @@ mod utils;
 fn main()
 {
     log::logger().info("Starting Space War Supreme!");
-    println!("{:?}", gameplay::mapgen::poisson_distribution(100));
+    use gameplay::mapgen::{poisson_distribution, apply_mask};
+    println!("{:?}", apply_mask(poisson_distribution(100), "./resources/spiral_mask.png"));
 /*
     let mut rng = thread_rng();
     let mut galaxy: Galaxy = Galaxy::new();

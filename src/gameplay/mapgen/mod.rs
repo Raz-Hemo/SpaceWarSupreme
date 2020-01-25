@@ -1,7 +1,9 @@
 extern crate rhai;
 extern crate rand;
+extern crate image;
 
 use crate::log::logger;
+use crate::utils;
 use crate::gameplay::types::{StarSystem, Star};
 use rhai::{RegisterFn, Scope};
 use rand::Rng;
@@ -106,8 +108,16 @@ pub fn poisson_distribution(num_cells: usize) -> Vec<(f64, f64)> {
 }
 
 
-fn apply_mask<P: AsRef<std::path::Path>>(points: &mut Vec<(f64, f64)>, mask_path: P) {
+pub fn apply_mask<P: AsRef<std::path::Path>>(points: Vec<(f64, f64)>, mask_path: P) -> utils::SWSResult<Vec<(f64, f64)>> {
+    use image::GenericImageView;
+    let img = utils::load_image(mask_path)?;
+    let mut points = points;
 
+    let x_factor = img.dimensions().0 as f64 / 2.0;
+    let y_factor = img.dimensions().1 as f64 / 2.0;
+    points.retain(|&(x, y)| img.get_pixel(((x + 1.0) * x_factor) as u32, ((y + 1.0) * y_factor) as u32)[0] == 255);
+    
+    Ok(points)
 }
 
 fn generate_star_system(x: f32, y: f32) -> StarSystem {
