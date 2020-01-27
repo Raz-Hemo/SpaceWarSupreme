@@ -3,6 +3,8 @@ mod log;
 mod gameplay;
 mod scripting;
 mod utils;
+mod graphics;
+mod config;
 
 fn main()
 {
