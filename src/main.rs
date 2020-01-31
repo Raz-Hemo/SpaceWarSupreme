@@ -9,7 +9,8 @@ mod config;
 fn main()
 {
     log::logger().info("Starting Space War Supreme!");
-    println!("{:?}", config::read_config());
+    let cfg = config::config();
+    println!("{:?}x{:?}", cfg.resolution_x, cfg.resolution_y);
 /*
     let mut rng = thread_rng();
     let mut galaxy: Galaxy = Galaxy::new();
