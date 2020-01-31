@@ -41,6 +41,11 @@ macro_rules! deserializable_struct {
     }
 }
 
+// TODO implement the following types using the trait FromStr:
+// bool - done by default
+// slider - done by default (maybe add the min and max to the def?)
+// enums (auto implement with macro?)
+// keybinds (struct with bool ctrl, bool alt, bool shift, and the key)
 deserializable_struct! {
     pub struct Config {
         // V1.0.0
