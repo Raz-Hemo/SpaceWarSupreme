@@ -3,6 +3,10 @@ name = "space_war_supreme"
 version = "1.0.0"
 authors = ["Raz Hemo"]
 edition = "2018"
+build = "build.rs"
+
+[build-dependencies]
+winres = "0.1.11"
 
 [dependencies]
 chrono = "0.4.10"
@@ -11,3 +15,4 @@ lazy_static = "1.4.0"
 rhai = "0.9.1"
 image = "0.22.4"
 winit = "0.20.0"
+winres = "0.1.11"

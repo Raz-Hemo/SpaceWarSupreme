@@ -15,7 +15,7 @@ fn main()
     log::logger().info("Starting Space War Supreme!");
 
     let eventloop = EventLoop::new();
-    let window = graphics::window::make_window(&eventloop);
+    let window = graphics::window::make_window(&eventloop).unwrap();
 
     eventloop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
