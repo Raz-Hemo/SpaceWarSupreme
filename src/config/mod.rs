@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use lazy_static::lazy_static;
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use crate::log::logger;
@@ -14,7 +14,7 @@ macro_rules! deserializable_struct {
         }
 
         impl $name {
-            fn deserialize(m: &HashMap<String, String>) -> $name {
+            fn deserialize(m: &BTreeMap<String, String>) -> $name {
                 $name {
                     $($field_name: match m.get(stringify!($field_name)) {
                         Some(s) => match s.parse::<$field_type>() {
@@ -32,8 +32,8 @@ macro_rules! deserializable_struct {
                 }
             }
 
-            fn serialize(&self) -> HashMap<String, String> {
-                let mut m: HashMap<String, String> = HashMap::new();
+            fn serialize(&self) -> BTreeMap<String, String> {
+                let mut m: BTreeMap<String, String> = BTreeMap::new();
                 $(m.insert(String::from(stringify!($field_name)), self.$field_name.to_string());)*
                 m
             }
@@ -49,8 +49,8 @@ macro_rules! deserializable_struct {
 deserializable_struct! {
     pub struct Config {
         // V1.0.0
-        resolution_x: i32 = 1920,
-        resolution_y: i32 = 1080,
+        //resolution_x: i32 = 1920,
+        //resolution_y: i32 = 1080,
 
         // Future versions
     }
@@ -64,14 +64,14 @@ pub fn config() -> RwLockReadGuard<'static, Config> {
     CFG.read().unwrap()
 }
 
-pub fn write_config() -> RwLockWriteGuard<'static, Config> {
+pub fn config_mut() -> RwLockWriteGuard<'static, Config> {
     CFG.write().unwrap()
 }
 
 // Reads the configuration file. If it's invalid, default values are loaded instead.
 pub fn load_config() -> Config {
     if let Ok(lines) = crate::utils::read_file_lines(CONFIG_FILE_PATH) {
-        let mut map: HashMap<String, String> = HashMap::new();
+        let mut map: BTreeMap<String, String> = BTreeMap::new();
         for line in lines {
             let split_line: Vec<&str> = line.split('=').collect();
             if split_line.len() != 2 {
@@ -81,18 +81,18 @@ pub fn load_config() -> Config {
         }
         Config::deserialize(&map)
     } else {
-        Config::deserialize(&HashMap::new())
+        Config::deserialize(&BTreeMap::new())
     }
 }
 
-pub fn dump_config(content: &Config) -> crate::utils::SWSResult<()> {
+pub fn save_config() -> crate::utils::SWSResult<()> {
     if let Ok(file) = std::fs::File::create(CONFIG_FILE_PATH) {
         use std::io::Write;
         let mut file = std::io::LineWriter::new(file);
 
-        for (k, v) in content.serialize().iter() {
+        for (k, v) in config().serialize().iter() {
             // Best effort saving of config
-            if let Err(_) = file.write_all(format!("{}={}", k, v).as_bytes()) {
+            if let Err(_) = file.write_all(format!("{}={}\n", k, v).as_bytes()) {
                 continue;
             }
         }

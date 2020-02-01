@@ -9,29 +9,9 @@ mod config;
 fn main()
 {
     log::logger().info("Starting Space War Supreme!");
-    let cfg = config::config();
-    println!("{:?}x{:?}", cfg.resolution_x, cfg.resolution_y);
-/*
-    let mut rng = thread_rng();
-    let mut galaxy: Galaxy = Galaxy::new();
-    let mut stars: Vec<String> = Vec::new();
-    for _ in 0..100
-    {
-        galaxy.stars.push(MainSequenceStar {
-            pos: (rng.gen_range(-1.0, 1.0), rng.gen_range(-1.0, 1.0)),
-            color: (rng.gen_range(0, 255), rng.gen_range(0, 255), rng.gen_range(0, 255)),
-            name:,
-            radius:,
-        });
+
+
+    if let Err(e) = config::save_config() {
+        log::logger().error(&format!("Failed saving config, {}", e));
     }
-
-    let mut args: Vec<String> = vec![
-        "C:\\Users\\Raz\\Documents\\source dump\\rust\\visualize_stars.py".to_string(), 
-        "-d".to_string(),
-    ];
-
-    args.append(&mut stars);
-    
-    let output = Command::new("python").args(args).output().expect("Failed to execute command");
-    println!("{:?}", std::str::from_utf8(&output.stderr.as_slice()));*/
 }
