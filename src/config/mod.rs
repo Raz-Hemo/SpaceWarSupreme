@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use lazy_static::lazy_static;
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use crate::log::logger;
-const CONFIG_FILE_PATH: &str = "./config.ini";
+use crate::consts;
 
 // Define a struct that can be created at runtime from a string.
 macro_rules! deserializable_struct {
@@ -70,7 +70,7 @@ pub fn config_mut() -> RwLockWriteGuard<'static, Config> {
 
 // Reads the configuration file. If it's invalid, default values are loaded instead.
 pub fn load_config() -> Config {
-    if let Ok(lines) = crate::utils::read_file_lines(CONFIG_FILE_PATH) {
+    if let Ok(lines) = crate::utils::read_file_lines(consts::CONFIG_FILE_PATH) {
         let mut map: BTreeMap<String, String> = BTreeMap::new();
         for line in lines {
             let split_line: Vec<&str> = line.split('=').collect();
@@ -86,7 +86,7 @@ pub fn load_config() -> Config {
 }
 
 pub fn save_config() -> crate::utils::SWSResult<()> {
-    if let Ok(file) = std::fs::File::create(CONFIG_FILE_PATH) {
+    if let Ok(file) = std::fs::File::create(consts::CONFIG_FILE_PATH) {
         use std::io::Write;
         let mut file = std::io::LineWriter::new(file);
 
