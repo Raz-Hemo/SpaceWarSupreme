@@ -8,12 +8,16 @@ use crate::utils;
 pub fn make_window(eventloop: &EventLoop<()>) -> utils::SWSResult<Window> {
     // Load the icon
     use image::GenericImageView;
-    let img = utils::load_image(crate::consts::ICON_PATH)?;
-    let (width, height) = img.dimensions();
-    let img = img.into_rgba().into_raw();
-    let icon = match Icon::from_rgba(img, width, height) {
-        Ok(i) => Some(i),
-        Err(_) => None,
+    let icon = match utils::load_image(crate::consts::ICON_PATH) {
+        Ok(img) => {
+            let (width, height) = img.dimensions();
+            let img = img.into_rgba().into_raw();
+            match Icon::from_rgba(img, width, height) {
+                Ok(i) => Some(i),
+                Err(_) => None,
+            }
+        },
+        Err(_) => None
     };
 
     // Build the window
