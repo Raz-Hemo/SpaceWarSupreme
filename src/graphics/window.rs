@@ -5,7 +5,7 @@ use winit::{
 };
 use crate::utils;
 
-pub fn make_window(eventloop: &EventLoop<()>) -> utils::SWSResult<Window> {
+pub fn make_window(eventloop: &EventLoop<()>) -> Window {
     // Load the icon
     use image::GenericImageView;
     let icon = match utils::load_image(crate::consts::ICON_PATH) {
@@ -21,10 +21,10 @@ pub fn make_window(eventloop: &EventLoop<()>) -> utils::SWSResult<Window> {
     };
 
     // Build the window
-    Ok(WindowBuilder::new()
-    .with_title(crate::consts::WINDOW_NAME)
-    .with_inner_size(LogicalSize::new(400.0, 200.0))
-    .with_window_icon(icon)
-    .build(&eventloop)
-    .unwrap())
+    WindowBuilder::new()
+        .with_title(crate::consts::WINDOW_NAME)
+        .with_inner_size(LogicalSize::new(400.0, 200.0))
+        .with_window_icon(icon)
+        .build(&eventloop)
+        .expect("Failed to create window")
 }

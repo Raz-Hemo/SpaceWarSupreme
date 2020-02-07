@@ -164,5 +164,5 @@ lazy_static! {
 }
 
 pub fn logger() -> std::sync::MutexGuard<'static, CircularLog> {
-    LOGGER.lock().unwrap()
+    LOGGER.lock().expect("Logger object is poisoned")
 }

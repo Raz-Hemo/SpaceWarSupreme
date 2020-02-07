@@ -61,11 +61,11 @@ lazy_static! {
 }
 
 pub fn config() -> RwLockReadGuard<'static, Config> {
-    CFG.read().unwrap()
+    CFG.read().expect("Config object is poisoned")
 }
 
 pub fn config_mut() -> RwLockWriteGuard<'static, Config> {
-    CFG.write().unwrap()
+    CFG.write().expect("Config object is poisoned")
 }
 
 // Reads the configuration file. If it's invalid, default values are loaded instead.
