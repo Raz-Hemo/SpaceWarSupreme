@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use lazy_static::lazy_static;
 
 const MAX_LOG_LINES: usize = 1000;
+const CRASH_REPORTS_PATH: &str = "./crash_reports";
 
 #[derive(Debug)]
 pub enum LogLevel {
@@ -137,7 +138,8 @@ lazy_static! {
 
             // Open a crash report file
             use std::io::{Write};
-            let f = std::fs::File::create(format!("./crash_reports/{}", 
+            let f = std::fs::File::create(format!("{}/{}",
+                                                  CRASH_REPORTS_PATH,
                                                   Local::now().format("%Y-%m-%d %H-%M-%S.txt")
             ));
             if f.is_err() {
@@ -145,8 +147,7 @@ lazy_static! {
             }
             let mut f = std::io::BufWriter::new(f.unwrap());
 
-            // Write the logs in order. TODO should implement iteration on circular logger
-            // directly because this is bugged rn
+            // Write the logs in order.
             for logline in locked_logger.into_iter() {
                 if writeln!(f, "{}", &logline.line).is_err() {
                     continue;
