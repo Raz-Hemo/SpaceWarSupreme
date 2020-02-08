@@ -2,3 +2,6 @@
 Maklay62 -    https://pixabay.com/illustrations/space-universe-galaxy-sky-stars-4748908/
 Parker_West - https://pixabay.com/illustrations/spaceship-starship-spacecraft-3141006/
 Janson_G -    https://pixabay.com/photos/spaceship-model-isolated-2844249/
+
+# Fonts
+https://www.1001fonts.com/sometype-mono-font.html

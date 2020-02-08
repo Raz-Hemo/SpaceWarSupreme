@@ -4,7 +4,8 @@ mod scripting;
 mod utils;
 mod graphics;
 mod config;
-pub mod consts;
+mod consts;
+mod input;
 use winit::{
     event_loop::{ControlFlow, EventLoop},
     event::{Event, WindowEvent},
@@ -16,6 +17,7 @@ fn main()
 
     let eventloop = EventLoop::new();
     let window = graphics::window::make_window(&eventloop);
+    let mut input_info = input::InputInfo::new();
 
     eventloop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -25,6 +27,15 @@ fn main()
                 event: WindowEvent::CloseRequested,
                 window_id,
             } if window_id == window.id() => *control_flow = ControlFlow::Exit,
+            Event::WindowEvent { event, .. } => input::handle_event(&mut input_info, &event),
+            Event::DeviceEvent { event, .. } => input::handle_device_event(&mut input_info, &event),
+            Event::MainEventsCleared => {
+                // TODO do logic
+                window.request_redraw();
+            },
+            Event::RedrawRequested(_window_id) => {
+                // TODO draw frame
+            },
             _ => (),
         }
     });
