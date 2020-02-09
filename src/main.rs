@@ -18,6 +18,7 @@ fn main()
     let eventloop = EventLoop::new();
     let window = graphics::window::make_window(&eventloop);
     let mut input_info = input::InputInfo::new();
+    let mut renderer = graphics::renderer::Renderer::new();
 
     eventloop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
