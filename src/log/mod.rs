@@ -2,6 +2,7 @@
 // new lines overwrite the oldest ones.
 // Usage is "use crate::log" to include and "logger().info("asd") " to write lines
 extern crate chrono;
+extern crate msgbox;
 use chrono::Local;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
@@ -129,12 +130,16 @@ lazy_static! {
             // Attempt to acquire logger
             let locked_logger = LOGGER.lock();
             if locked_logger.is_err() {
-                return;
+                msgbox::create(
+                    "Error", 
+                    &format!("A panic occurred at {}:{}: {}\nFailed to acquire logger for crash report.", filename, line, cause), 
+                    msgbox::IconType::Error
+                );
             }
             let mut locked_logger = locked_logger.unwrap();
 
             // Write panic
-            locked_logger.error(&format!("A panic occurred at {}:{}: {}", filename, line, cause)[..]);
+            locked_logger.error(&format!("A panic occurred at {}:{}: {}", filename, line, cause));
 
             // Open a crash report file
             use std::io::{Write};
@@ -143,7 +148,11 @@ lazy_static! {
                                                   Local::now().format("%Y-%m-%d %H-%M-%S.txt")
             ));
             if f.is_err() {
-                return;
+                msgbox::create(
+                    "Error", 
+                    &format!("A panic occurred at {}:{}: {}\nFailed to create crash report.", filename, line, cause), 
+                    msgbox::IconType::Error
+                );
             }
             let mut f = std::io::BufWriter::new(f.unwrap());
 
@@ -158,6 +167,11 @@ lazy_static! {
             if f.flush().is_err() {
                 return;
             }
+            msgbox::create(
+                "Error", 
+                &format!("A panic occurred at {}:{}: {}\nCrash report dumped.", filename, line, cause), 
+                msgbox::IconType::Error
+            );
         }));
 
         result
