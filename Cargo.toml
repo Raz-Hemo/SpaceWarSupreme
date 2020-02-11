@@ -18,6 +18,7 @@ winit = "0.20.0"
 vulkano = "0.17.0"
 winres = "0.1.11"
 msgbox = "0.4.0"
+rodio = "0.10.0"
 
 [profile.release]
 lto = true

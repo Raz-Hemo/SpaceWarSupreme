@@ -7,6 +7,9 @@ pub struct InputInfo<'a> {
     // Ctrl, Alt and Shift state
     modifiers: ModifiersState,
 
+    // Pixel position of the mouse relative to top left
+    mouse_pos: winit::dpi::PhysicalPosition<i32>,
+
     // Maps keybinds to their handlers
     handlers: HashMap<String, Box<dyn Fn() + 'a>>,
 
@@ -20,6 +23,7 @@ impl<'a> InputInfo<'a> {
             modifiers: ModifiersState::empty(),
             handlers: HashMap::new(),
             pressed_keys: HashSet::new(),
+            mouse_pos: winit::dpi::PhysicalPosition::new(0, 0),
         }
     }
 
@@ -84,7 +88,13 @@ pub fn handle_event(input_info: &mut InputInfo, e: &WindowEvent) {
             }, .. 
         } => {
             input_info.pressed_keys.remove(keycode);
-        }
+        },
+        WindowEvent::CursorMoved {
+            position: pos,
+            ..
+        } => {
+            input_info.mouse_pos = pos.clone();
+        },
         _ => ()
     }
 }
