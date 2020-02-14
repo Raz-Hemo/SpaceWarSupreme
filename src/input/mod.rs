@@ -8,7 +8,7 @@ pub struct InputInfo<'a> {
     modifiers: ModifiersState,
 
     // Pixel position of the mouse relative to top left
-    mouse_pos: winit::dpi::PhysicalPosition<i32>,
+    mouse_pos: winit::dpi::PhysicalPosition<f64>,
 
     // Maps keybinds to their handlers
     handlers: HashMap<String, Box<dyn Fn() + 'a>>,
@@ -23,7 +23,7 @@ impl<'a> InputInfo<'a> {
             modifiers: ModifiersState::empty(),
             handlers: HashMap::new(),
             pressed_keys: HashSet::new(),
-            mouse_pos: winit::dpi::PhysicalPosition::new(0, 0),
+            mouse_pos: winit::dpi::PhysicalPosition::new(0.0, 0.0),
         }
     }
 
