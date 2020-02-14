@@ -15,10 +15,9 @@ fn main()
 {
     log::logger().info("Starting Space War Supreme!");
 
-    let eventloop = EventLoop::new();
-    let window = graphics::window::make_window(&eventloop);
     let mut input_info = input::InputInfo::new();
-    let mut renderer = graphics::renderer::Renderer::new();
+    let eventloop = EventLoop::new();
+    let renderer = graphics::renderer::Renderer::new(&eventloop);
 
     eventloop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
@@ -27,12 +26,12 @@ fn main()
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 window_id,
-            } if window_id == window.id() => *control_flow = ControlFlow::Exit,
+            } if window_id == renderer.get_window().id() => *control_flow = ControlFlow::Exit,
             Event::WindowEvent { event, .. } => input::handle_event(&mut input_info, &event),
             Event::DeviceEvent { event, .. } => input::handle_device_event(&mut input_info, &event),
             Event::MainEventsCleared => {
                 // TODO do logic
-                window.request_redraw();
+                renderer.get_window().request_redraw();
             },
             Event::RedrawRequested(_window_id) => {
                 // TODO draw frame
