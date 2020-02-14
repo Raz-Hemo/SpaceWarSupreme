@@ -63,6 +63,7 @@ impl CircularLog {
                           time_str, log_level_str, line),
             level: level,
         };
+        println!("{}", log_line.line);
 
         if self.lines.len() < MAX_LOG_LINES {
             self.lines.push(log_line);
