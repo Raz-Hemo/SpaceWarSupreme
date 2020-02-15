@@ -20,7 +20,7 @@ fn main()
     let renderer = graphics::renderer::Renderer::new(&eventloop);
 
     eventloop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
+        *control_flow = ControlFlow::Poll;
 
         match event {
             Event::WindowEvent {
@@ -30,11 +30,12 @@ fn main()
             Event::WindowEvent { event, .. } => input::handle_event(&mut input_info, &event),
             Event::DeviceEvent { event, .. } => input::handle_device_event(&mut input_info, &event),
             Event::MainEventsCleared => {
-                // TODO do logic
+                // TODO this is where all non-rendering code sits (and request_redraw should
+                // be the last line in here)
                 renderer.get_window().request_redraw();
             },
             Event::RedrawRequested(_window_id) => {
-                // TODO draw frame
+                // TODO this is where rendering code sits
             },
             _ => (),
         }
