@@ -1,5 +1,5 @@
 use winit::event::{WindowEvent, DeviceEvent, KeyboardInput, ModifiersState, ElementState,
-                   VirtualKeyCode};
+                   VirtualKeyCode, MouseButton};
 use std::collections::{HashMap, HashSet};
 mod keycode_to_str;
 
@@ -8,7 +8,12 @@ pub struct InputInfo<'a> {
     modifiers: ModifiersState,
 
     // Pixel position of the mouse relative to top left
-    mouse_pos: winit::dpi::PhysicalPosition<f64>,
+    mousex: f64,
+    mousey: f64,
+
+    // Mouse click handlers taking is_down, mouse_x, mouse_y
+    lclick_handler: Box<dyn Fn(bool, f64, f64) + 'a>,
+    rclick_handler: Box<dyn Fn(bool, f64, f64) + 'a>,
 
     // Maps keybinds to their handlers
     handlers: HashMap<String, Box<dyn Fn() + 'a>>,
@@ -23,7 +28,10 @@ impl<'a> InputInfo<'a> {
             modifiers: ModifiersState::empty(),
             handlers: HashMap::new(),
             pressed_keys: HashSet::new(),
-            mouse_pos: winit::dpi::PhysicalPosition::new(0.0, 0.0),
+            mousex: 0.0,
+            mousey:0.0,
+            lclick_handler: Box::new(|_, _, _| ()),
+            rclick_handler: Box::new(|_, _, _| ()),
         }
     }
 
@@ -33,6 +41,22 @@ impl<'a> InputInfo<'a> {
 
     pub fn remove_handler(self: &mut InputInfo<'a>, keybind: &str) {
         self.handlers.remove(keybind);
+    }
+    
+    pub fn set_lclick_handler(self: &mut InputInfo<'a>, handler: Box<dyn Fn(bool, f64, f64) + 'a>) {
+        self.lclick_handler = handler;
+    }
+
+    pub fn clear_lclick_handler(self: &mut InputInfo<'a>) {
+        self.lclick_handler = Box::new(|_, _, _| ());
+    }
+
+    pub fn set_rclick_handler(self: &mut InputInfo<'a>, handler: Box<dyn Fn(bool, f64, f64) + 'a>) {
+        self.rclick_handler = handler;
+    }
+
+    pub fn clear_rclick_handler(self: &mut InputInfo<'a>) {
+        self.rclick_handler = Box::new(|_, _, _| ());
     }
 }
 
@@ -93,8 +117,20 @@ pub fn handle_event(input_info: &mut InputInfo, e: &WindowEvent) {
             position: pos,
             ..
         } => {
-            input_info.mouse_pos = pos.clone();
+            input_info.mousex = pos.x;
+            input_info.mousey = pos.y;
         },
+        WindowEvent::MouseInput {
+            button,
+            state,
+            ..
+        } => {
+            let h = if *button == MouseButton::Left 
+                        {&input_info.lclick_handler} 
+                    else 
+                        {&input_info.rclick_handler};
+            h(*state == ElementState::Pressed, input_info.mousex, input_info.mousey);
+        }
         _ => ()
     }
 }
