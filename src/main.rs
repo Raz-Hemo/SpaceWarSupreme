@@ -18,6 +18,7 @@ fn main()
     let mut input_info = input::InputInfo::new();
     let eventloop = EventLoop::new();
     let renderer = graphics::renderer::Renderer::new(&eventloop);
+    let mut game_state_manager = gameplay::gamestate::GameStateManager::new();
 
     eventloop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -30,8 +31,11 @@ fn main()
             Event::WindowEvent { event, .. } => input::handle_event(&mut input_info, &event),
             Event::DeviceEvent { event, .. } => input::handle_device_event(&mut input_info, &event),
             Event::MainEventsCleared => {
-                // TODO this is where all non-rendering code sits (and request_redraw should
-                // be the last line in here)
+                game_state_manager.tick();
+                if game_state_manager.should_exit {
+                    *control_flow = ControlFlow::Exit;
+                }
+
                 renderer.get_window().request_redraw();
             },
             Event::RedrawRequested(_window_id) => {
