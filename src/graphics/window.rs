@@ -33,6 +33,7 @@ pub fn make_window(eventloop: &EventLoop<()>, instance: Arc<Instance>) -> Arc<Su
         .with_title(crate::consts::WINDOW_NAME)
         .with_inner_size(LogicalSize::new(640, 480))
         .with_window_icon(icon)
+        .with_resizable(false)
         .build_vk_surface(&eventloop, instance)
         .expect("Failed to create window")
 }
