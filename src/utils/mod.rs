@@ -34,11 +34,13 @@ pub fn get_game_dependencies() -> HashMap<String, String> {
     let mut dependencies_found = false;
 
     for line in cargo_toml.lines() {
-        if dependencies_found && line == "\n" {
-            break;
-        }
         if dependencies_found {
-            result.insert(line.split(" = ")[0], line.split(" = ")[1].trim("\""));
+            let split_line = line.split(" = ").collect::<Vec<&str>>();
+            if split_line.len() != 2 {
+                break;
+            }
+            
+            result.insert(String::from(split_line[0]), split_line[1].replace("\"", ""));
         }
         if line == "[dependencies]" {
             dependencies_found = true;
