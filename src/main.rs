@@ -13,7 +13,7 @@ use winit::{
 
 fn main()
 {
-    log::logger().info("Starting Space War Supreme!");
+    log::info("Starting Space War Supreme!");
 
     let mut input_info = input::InputInfo::new();
     let eventloop = EventLoop::new();

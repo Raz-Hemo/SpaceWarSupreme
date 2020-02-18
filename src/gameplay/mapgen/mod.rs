@@ -2,7 +2,7 @@ extern crate rhai;
 extern crate rand;
 extern crate image;
 
-use crate::log::logger;
+use crate::log;
 use crate::utils;
 use crate::gameplay::types::{StarSystem, Star};
 use rhai::{RegisterFn, Scope};
@@ -140,7 +140,7 @@ pub fn execute_map_generator(
     let mut engine = crate::scripting::new_engine();
     let mut scope = Scope::new();
     if let Err(e) = engine.eval_with_scope::<()>(&mut scope, &namegen_script) {
-        logger().error("Namegen script failed with error");
+        log::error("Namegen script failed with error");
         return Err(format!("{:?}", e));
     }
 

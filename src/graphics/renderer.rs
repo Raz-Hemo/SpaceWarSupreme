@@ -40,7 +40,7 @@ fn pick_best_physical_device(inst: &Arc<Instance>) -> PhysicalDevice {
         }
     }
 
-    crate::log::logger().info(&format!("Using GPU '{}'", result.name()));
+    crate::log::info(&format!("Using GPU '{}'", result.name()));
     result
 }
 

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use lazy_static::lazy_static;
 use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use crate::log::logger;
+use crate::log;
 use crate::consts;
 
 // Define a struct that can be created at runtime from a string.
@@ -20,12 +20,12 @@ macro_rules! deserializable_struct {
                         Some(s) => match s.parse::<$field_type>() {
                             Ok(v) => v,
                             Err(_) => {
-                                logger().error(&format!("Failed to parse config value {}", stringify!($field_name)));
+                                log::error(&format!("Failed to parse config value {}", stringify!($field_name)));
                                 $field_default
                             }
                         },
                         None => {
-                            logger().error(&format!("No config value found for {}", stringify!($field_name)));
+                            log::error(&format!("No config value found for {}", stringify!($field_name)));
                             $field_default
                         },
                     },)*

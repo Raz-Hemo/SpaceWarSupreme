@@ -1,15 +1,15 @@
-use crate::log::logger;
+use crate::log;
 
 pub fn error(x: &str) -> () {
-    logger().error(x);
+    log::error(x);
 }
 
 pub fn warning(x: &str) -> () {
-    logger().warning(x);
+    log::warning(x);
 }
 
 pub fn info(x: &str) -> () {
-    logger().info(x);
+    log::info(x);
 }
 
 pub fn rand_range<T>(min: T, max: T) -> T
