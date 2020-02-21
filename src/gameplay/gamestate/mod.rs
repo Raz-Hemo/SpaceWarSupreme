@@ -33,6 +33,7 @@ pub struct GameStateManager<'a> {
 
 impl<'a> GameStateManager<'a> {
     pub fn new(initial_state: Box<dyn GameState>) -> GameStateManager<'a> {
+        initial_state.init();
         GameStateManager {
             states: vec![initial_state],
             last_tick_time: Instant::now(),
@@ -47,8 +48,11 @@ impl<'a> GameStateManager<'a> {
         match self.states.last()
                 .expect("Trying to tick empty game state stack")
                 .tick(elapsed_time) {
-            GameStateAction::Pop => {self.states.pop().unwrap();},
-            GameStateAction::Push(new_state) => {self.states.push(new_state);},
+            GameStateAction::Pop => {self.states.pop().unwrap().cleanup();},
+            GameStateAction::Push(new_state) => {
+                new_state.init();
+                self.states.push(new_state);
+            },
             GameStateAction::Nothing => (),
         };
     }
