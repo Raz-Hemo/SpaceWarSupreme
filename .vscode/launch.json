@@ -20,7 +20,8 @@
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [{"name": "RUST_BACKTRACE", "value": "full"}],
-            "externalConsole": true
+            "externalConsole": true,
+            "preLaunchTask": "cargo build",
         },
     ]
 }

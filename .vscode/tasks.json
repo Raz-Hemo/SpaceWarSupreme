@@ -17,6 +17,16 @@
         }
       },
       {
+        "label": "cargo build",
+        "type": "shell",
+        "command": "cargo",
+        "args": [
+          "build"
+        ],
+        "group": "build",
+        "problemMatcher": []
+      },
+      {
         "label": "cargo debug",
         "type": "shell",
         "command": "cargo",
