@@ -5,11 +5,23 @@ pub type SWSResult<T> = Result<T, String>;
 
 pub fn error_msgbox(message: &str) {
     #[cfg(target_os = "windows")]
-    std::process::Command::new("cscript")
-        .arg("win_msgbox.vbs")
-        .arg(message)
-        .output()
-        .unwrap();
+    {
+        use std::io::Write;
+
+        // The win_msgbox script creates a messagebox from stdin.
+        if let Ok(mut p) = std::process::Command::new("cscript")
+                    .arg("win_msgbox.vbs")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn() {
+            if let Some(stdin) = p.stdin.as_mut() {
+                if stdin.write_all(message.as_bytes()).is_ok() {
+                    if p.wait().is_err() {
+                        // nothing to do here.
+                    }
+                }
+            }
+        }
+    }
 }
 
 pub fn read_file<P: AsRef<std::path::Path>>(path: P) -> SWSResult<String> {
