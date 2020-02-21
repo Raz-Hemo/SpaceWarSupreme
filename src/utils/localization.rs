@@ -1,14 +1,13 @@
 extern crate serde_json;
-use std::path::Path;
 use std::collections::HashMap;
-use std::ffi::OsStr;
 
 const LOCALIZATION_PATH: &str = "./resources/localization";
+const LOCALIZATION_EXTENSION: &str = "json";
 
 pub fn load_localization(language: &str) -> super::SWSResult<HashMap<String, String>> {
     let json_result: serde_json::Result<HashMap<String, String>> = serde_json::from_str(
-        &super::read_file(Path::new(LOCALIZATION_PATH)
-        .join(language).with_extension("json"))?
+        &super::read_file(std::path::Path::new(LOCALIZATION_PATH)
+        .join(language).with_extension(LOCALIZATION_EXTENSION))?
     );
     if json_result.is_ok() {
         Ok(json_result.unwrap())
@@ -18,13 +17,8 @@ pub fn load_localization(language: &str) -> super::SWSResult<HashMap<String, Str
 }
 
 pub fn get_available_languages() -> Vec<String> {
-    match std::fs::read_dir(LOCALIZATION_PATH) {
-        Err(_) => vec![],                                                      // Directory opened?
-        Ok(dir) => dir.filter_map(|p| p.ok())                                  // Entry successfully read?
-                      .map(|p| p.path())                                       // DirEntry -> Path
-                      .filter(|p| p.extension() == Some(OsStr::new("json")))   // Path is a json?
-                      .filter(|p| p.file_stem().is_some())                     // Remove extension
-                      .map(|p| String::from(p.file_stem().unwrap().to_string_lossy()))
-                      .collect()
-    }
+    super::get_files_with_extension_from(LOCALIZATION_PATH, LOCALIZATION_EXTENSION)
+           .into_iter()
+           .map(|p| String::from(p.file_stem().unwrap().to_string_lossy()))
+           .collect()
 }

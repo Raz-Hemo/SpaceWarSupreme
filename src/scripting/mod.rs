@@ -16,11 +16,5 @@ pub fn new_engine() -> Engine {
 }
 
 pub fn get_scripts_in_folder<P: AsRef<std::path::Path>>(path: P) -> Vec<std::path::PathBuf> {
-    match std::fs::read_dir(path.as_ref()) {
-        Err(_) => vec![],                                // Directory opened?
-        Ok(dir) => dir.filter_map(|p| p.ok())            // Entry successfully read?
-                      .map(|p| p.path())                 // DirEntry -> Path
-                      .filter(|p| p.ends_with(".rhai"))  // Path is a rhai script?
-                      .collect()    // Path is returned!
-    }
+    crate::utils::get_files_with_extension_from(path, "rhai")
 }
