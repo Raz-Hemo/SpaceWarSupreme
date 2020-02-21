@@ -18,7 +18,6 @@ winit = "0.21.0"
 vulkano = "0.17.0"
 vulkano-win = "0.17.0"
 winres = "0.1.11"
-msgbox = "0.4.0"
 rodio = "0.10.0"
 
 #[profile.release]

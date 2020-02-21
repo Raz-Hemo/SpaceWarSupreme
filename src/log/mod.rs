@@ -2,10 +2,10 @@
 // new lines overwrite the oldest ones.
 // Usage is "use crate::log" to include and "logger().info("asd") " to write lines
 extern crate chrono;
-extern crate msgbox;
 use chrono::Local;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
+use crate::utils::error_msgbox;
 
 const MAX_LOG_LINES: usize = 1000;
 const CRASH_REPORTS_PATH: &str = "./crash_reports";
@@ -127,15 +127,13 @@ lazy_static! {
                 panic_info.payload().downcast_ref::<&str>().map(|s| *s)
                     .unwrap_or("<cause unknown>")
             );
+            let panic_log = format!("A panic occurred at {}:{}: {}", filename, line, cause);
 
             // Attempt to acquire logger
-            let locked_logger = LOGGER.lock();
+            let locked_logger = LOGGER.try_lock();
             if locked_logger.is_err() {
-                msgbox::create(
-                    "Error", 
-                    &format!("A panic occurred at {}:{}: {}\nFailed to acquire logger for crash report.", filename, line, cause), 
-                    msgbox::IconType::Error
-                );
+                error_msgbox(&panic_log);
+                return;
             }
             let mut locked_logger = locked_logger.unwrap();
 
@@ -149,11 +147,8 @@ lazy_static! {
                                                   Local::now().format("%Y-%m-%d %H-%M-%S.txt")
             ));
             if f.is_err() {
-                msgbox::create(
-                    "Error", 
-                    &format!("A panic occurred at {}:{}: {}\nFailed to create crash report.", filename, line, cause), 
-                    msgbox::IconType::Error
-                );
+                error_msgbox(&panic_log);
+                return;
             }
             let mut f = std::io::BufWriter::new(f.unwrap());
 
@@ -166,13 +161,11 @@ lazy_static! {
             
             // Best effort flush
             if f.flush().is_err() {
+                error_msgbox(&panic_log);
                 return;
             }
-            msgbox::create(
-                "Error", 
-                &format!("A panic occurred at {}:{}: {}\nCrash report dumped.", filename, line, cause), 
-                msgbox::IconType::Error
-            );
+    
+            error_msgbox(&panic_log);
         }));
 
         result

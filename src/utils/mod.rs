@@ -3,6 +3,15 @@ use std::collections::HashMap;
 
 pub type SWSResult<T> = Result<T, String>;
 
+pub fn error_msgbox(message: &str) {
+    #[cfg(target_os = "windows")]
+    std::process::Command::new("cscript")
+        .arg("win_msgbox.vbs")
+        .arg(message)
+        .output()
+        .unwrap();
+}
+
 pub fn read_file<P: AsRef<std::path::Path>>(path: P) -> SWSResult<String> {
     if let Ok(content) = std::fs::read_to_string(path.as_ref()) {
         Ok(content)
