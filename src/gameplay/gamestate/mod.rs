@@ -1,4 +1,12 @@
 use std::time::{Instant, Duration};
+pub mod main_menu;
+
+/// Returned from a game state's tick(). Determines what the stack should do next
+pub enum GameStateAction {
+    Push(Box<dyn GameState>),
+    Pop,
+    Nothing
+}
 
 /// This trait represents a point in the game's state machine. For example:
 /// main_menu, in_game, new_game_creator all implement GameState.
@@ -7,7 +15,7 @@ pub trait GameState {
     fn init(&self);
 
     fn render(&self, renderer: &crate::graphics::renderer::Renderer);
-    fn tick(&self, delta: Duration);
+    fn tick(&self, delta: Duration) -> GameStateAction;
 }
 
 /// Object that manages game states, wrapping the tick and render logic while
@@ -24,9 +32,9 @@ pub struct GameStateManager<'a> {
 }
 
 impl<'a> GameStateManager<'a> {
-    pub fn new() -> GameStateManager<'a> {
+    pub fn new(initial_state: Box<dyn GameState>) -> GameStateManager<'a> {
         GameStateManager {
-            states: Vec::new(),
+            states: vec![initial_state],
             last_tick_time: Instant::now(),
             should_exit: false,
         }
@@ -36,18 +44,12 @@ impl<'a> GameStateManager<'a> {
         let elapsed_time = self.last_tick_time.elapsed();
         self.last_tick_time = Instant::now();
 
-        self.states.last().expect("Trying to tick empty game state stack").tick(
-            elapsed_time
-        );
-
-    }
-
-    // TODO what happens if a gamestate pops itself? something bad probs
-    pub fn pop_state(&mut self) {
-        self.states.pop().expect("Trying to pop empty game state stack").cleanup();
-    }
-
-    pub fn push_state(&mut self, state: Box<dyn GameState>) {
-        self.states.push(state);
+        match self.states.last()
+                .expect("Trying to tick empty game state stack")
+                .tick(elapsed_time) {
+            GameStateAction::Pop => {self.states.pop().unwrap();},
+            GameStateAction::Push(new_state) => {self.states.push(new_state);},
+            GameStateAction::Nothing => (),
+        };
     }
 }

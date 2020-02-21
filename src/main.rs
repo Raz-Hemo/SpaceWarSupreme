@@ -1,3 +1,8 @@
+use winit::{
+    event_loop::{ControlFlow, EventLoop},
+    event::{Event, WindowEvent},
+};
+
 mod log;
 mod gameplay;
 mod scripting;
@@ -6,9 +11,10 @@ mod graphics;
 mod config;
 mod consts;
 mod input;
-use winit::{
-    event_loop::{ControlFlow, EventLoop},
-    event::{Event, WindowEvent},
+
+use gameplay::gamestate::{
+    GameStateManager,
+    main_menu::MainMenuGameState,
 };
 
 fn main()
@@ -18,7 +24,9 @@ fn main()
     let mut input_info = input::InputInfo::new();
     let eventloop = EventLoop::new();
     let renderer = graphics::renderer::Renderer::new(&eventloop);
-    let mut game_state_manager = gameplay::gamestate::GameStateManager::new();
+    let mut game_state_manager = GameStateManager::new(
+        Box::new(MainMenuGameState::new())
+    );
 
     eventloop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
