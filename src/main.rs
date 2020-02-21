@@ -1,3 +1,8 @@
+// Hide the console window in windows+release mode
+#![cfg_attr(target_os = "windows", 
+   cfg_attr(not(debug_assertions), 
+   windows_subsystem = "windows"))]
+
 use winit::{
     event_loop::{ControlFlow, EventLoop},
     event::{Event, WindowEvent},
