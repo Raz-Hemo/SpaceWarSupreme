@@ -34,6 +34,15 @@ impl<T: UIElement> UIElementCore<T> {
             self.start_click = None;
         }
     }
+    fn mouse_down(&mut self) {
+        self.start_click = Some(std::time::Instant::now());
+    }
+    fn mouse_up(&mut self) {
+        if self.start_click.is_some() {
+            self.element.on_click();
+        }
+        self.start_click = None;
+    }
 }
 
 mod checkbox;
