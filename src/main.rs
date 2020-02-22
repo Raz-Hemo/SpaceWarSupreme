@@ -16,6 +16,8 @@ mod graphics;
 mod config;
 mod consts;
 mod input;
+mod engine;
+mod ui;
 
 use gameplay::gamestate::{
     GameStateManager,

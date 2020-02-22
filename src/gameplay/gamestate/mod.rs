@@ -11,11 +11,11 @@ pub enum GameStateAction {
 /// This trait represents a point in the game's state machine. For example:
 /// main_menu, in_game, new_game_creator all implement GameState.
 pub trait GameState {
-    fn cleanup(&self);
-    fn init(&self);
+    fn cleanup(&self, engine: &mut crate::engine::Engine);
+    fn init(&self, engine: &mut crate::engine::Engine);
 
     fn render(&self, renderer: &crate::graphics::renderer::Renderer);
-    fn tick(&self, delta: Duration) -> GameStateAction;
+    fn tick(&self, engine: &mut crate::engine::Engine, delta: Duration) -> GameStateAction;
 }
 
 /// Object that manages game states, wrapping the tick and render logic while
@@ -32,8 +32,8 @@ pub struct GameStateManager<'a> {
 }
 
 impl<'a> GameStateManager<'a> {
-    pub fn new(initial_state: Box<dyn GameState>) -> GameStateManager<'a> {
-        initial_state.init();
+    pub fn new(engine: &mut crate::engine::Engine, initial_state: Box<dyn GameState>) -> GameStateManager<'a> {
+        initial_state.init(engine);
         GameStateManager {
             states: vec![initial_state],
             last_tick_time: Instant::now(),
@@ -41,16 +41,16 @@ impl<'a> GameStateManager<'a> {
         }
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self, engine: &mut crate::engine::Engine) {
         let elapsed_time = self.last_tick_time.elapsed();
         self.last_tick_time = Instant::now();
 
         match self.states.last()
                 .expect("Trying to tick empty game state stack")
-                .tick(elapsed_time) {
-            GameStateAction::Pop => {self.states.pop().unwrap().cleanup();},
+                .tick(engine, elapsed_time) {
+            GameStateAction::Pop => {self.states.pop().unwrap().cleanup(engine);},
             GameStateAction::Push(new_state) => {
-                new_state.init();
+                new_state.init(engine);
                 self.states.push(new_state);
             },
             GameStateAction::Nothing => (),

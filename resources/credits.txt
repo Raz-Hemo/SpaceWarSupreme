@@ -5,3 +5,6 @@ Janson_G -    https://pixabay.com/photos/spaceship-model-isolated-2844249/
 
 # Fonts
 https://www.1001fonts.com/sometype-mono-font.html
+
+# Icons
+icons8.com
