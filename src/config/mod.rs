@@ -47,8 +47,7 @@ macro_rules! deserializable_struct {
 deserializable_struct! {
     pub struct Config {
         // V1.0.0
-        //resolution_x: i32 = 1920,
-        //resolution_y: i32 = 1080,
+        test_value: bool = false,
 
         // Future versions
     }

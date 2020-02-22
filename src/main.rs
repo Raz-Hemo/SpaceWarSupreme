@@ -28,10 +28,11 @@ fn main()
 {
     log::info("Starting Space War Supreme!");
 
-    let mut input_info = input::InputInfo::new();
     let eventloop = EventLoop::new();
     let renderer = graphics::renderer::Renderer::new(&eventloop);
+    let mut engine = engine::Engine::new();
     let mut game_state_manager = GameStateManager::new(
+        &mut engine,
         Box::new(MainMenuGameState::new())
     );
 
@@ -43,10 +44,10 @@ fn main()
                 event: WindowEvent::CloseRequested,
                 window_id,
             } if window_id == renderer.get_window().id() => *control_flow = ControlFlow::Exit,
-            Event::WindowEvent { event, .. } => input::handle_event(&mut input_info, &event),
-            Event::DeviceEvent { event, .. } => input::handle_device_event(&mut input_info, &event),
+            Event::WindowEvent { event, .. } => input::handle_event(&mut engine.input, &event),
+            Event::DeviceEvent { event, .. } => input::handle_device_event(&mut engine.input, &event),
             Event::MainEventsCleared => {
-                game_state_manager.tick();
+                game_state_manager.tick(&mut engine);
                 if game_state_manager.should_exit {
                     *control_flow = ControlFlow::Exit;
                 }
