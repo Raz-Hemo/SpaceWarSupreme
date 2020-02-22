@@ -3,7 +3,8 @@ use std::collections::HashMap;
 
 pub type SWSResult<T> = Result<T, String>;
 
-pub mod localization;
+mod localization;
+pub use localization::Localization;
 
 pub fn error_msgbox(message: &str) {
     #[cfg(target_os = "windows")]
