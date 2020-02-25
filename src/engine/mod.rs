@@ -1,6 +1,9 @@
+use std::sync::mpsc::{channel, Sender, Receiver};
+
 pub struct Engine<'a> {
     pub input: crate::input::InputInfo<'a>,
     pub cfg: crate::config::Config,
+    pub audio: Sender<;
 }
 
 impl<'a> Engine<'a> {
