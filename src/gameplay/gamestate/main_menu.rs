@@ -5,7 +5,7 @@ pub struct Button {
 }
 
 pub struct MainMenuGameState {
-    ui: crate::ui::UIElementCore<crate::ui::Checkbox>,
+    //ui: crate::ui::UIElementCore<crate::ui::Checkbox>,
     should_exit: bool,
     //credits_window: ui::Window;
 }
@@ -26,7 +26,7 @@ impl MainMenuGameState {
 
     pub fn new() -> MainMenuGameState {
         MainMenuGameState {
-            buttons: Vec::new(),
+            //buttons: Vec::new(),
             should_exit: false,
             //credits_window: ui::Window::new([ui::TextBox::new(include_string!())]),
         }

@@ -16,5 +16,8 @@ pub fn new_engine() -> Engine {
 }
 
 pub fn get_scripts_in_folder<P: AsRef<std::path::Path>>(path: P) -> Vec<std::path::PathBuf> {
-    crate::utils::get_files_with_extension_from(path, "rhai")
+    crate::utils::get_files_with_extension_from(
+        path,
+        vec![crate::consts::SCRIPT_FILE_EXTENSION]
+    )
 }

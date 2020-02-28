@@ -29,7 +29,7 @@ impl<'a> Localization {
     }
 
     pub fn get_available_languages() -> Vec<String> {
-        super::get_files_with_extension_from(LOCALIZATION_PATH, LOCALIZATION_EXTENSION)
+        super::get_files_with_extension_from(LOCALIZATION_PATH, vec![LOCALIZATION_EXTENSION])
                .into_iter()
                .map(|p| String::from(p.file_stem().unwrap().to_string_lossy()))
                .collect()

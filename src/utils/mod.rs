@@ -73,15 +73,14 @@ pub fn get_game_dependencies() -> HashMap<String, String> {
     result
 }
 
-pub fn get_files_with_extension_from<P>(dir: P, extension: &str) -> Vec<std::path::PathBuf> 
+pub fn get_files_with_extension_from<P>(dir: P, extensions: Vec<&str>) -> Vec<std::path::PathBuf> 
         where P: AsRef<std::path::Path> {
-    use std::ffi::OsStr;
     match std::fs::read_dir(dir) {
         Err(_) => vec![],                                                      // Directory opened?
         Ok(dir) => dir.filter_map(|p| p.ok())                                  // Entry successfully read?
                       .map(|p| p.path())                                       // DirEntry -> Path
-                      .filter(|p| p.extension() == Some(OsStr::new(extension)))   // Path is a json?
                       .filter(|p| p.file_stem().is_some())                     // Remove extension
+                      .filter(|p| extensions.iter().any(|&e| e == p.extension().unwrap().to_string_lossy().as_ref()))   // Path is a json?
                       .collect()
     }
 }

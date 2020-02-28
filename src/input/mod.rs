@@ -16,7 +16,7 @@ pub struct InputInfo<'a> {
     rclick_handler: Box<dyn Fn(bool, f64, f64) + 'a>,
 
     // Maps keybinds to their handlers
-    handlers: HashMap<String, Box<dyn Fn() + 'a>>,
+    handlers: HashMap<String, Box<dyn Fn(&crate::engine::Engine) + 'a>>,
 
     // Prevent key repeat by keeping track of which keys are already pressed
     pressed_keys: HashSet<VirtualKeyCode>,
@@ -35,7 +35,7 @@ impl<'a> InputInfo<'a> {
         }
     }
 
-    pub fn add_handler(self: &mut InputInfo<'a>, keybind: &str, handler: Box<dyn Fn() + 'a>) {
+    pub fn add_handler(self: &mut InputInfo<'a>, keybind: &str, handler: Box<dyn Fn(&crate::engine::Engine) + 'a>) {
         self.handlers.insert(String::from(keybind), handler);
     }
 
@@ -86,7 +86,7 @@ fn input_to_string(keycode: &VirtualKeyCode, modifiers: &ModifiersState) -> Stri
     parts.join("+")
 }
 
-pub fn handle_event(input_info: &mut InputInfo, e: &WindowEvent) {
+pub fn handle_event(engine: &mut crate::engine::Engine, e: &WindowEvent) {
     match e {
         WindowEvent::KeyboardInput { 
             input: KeyboardInput { 
@@ -95,13 +95,13 @@ pub fn handle_event(input_info: &mut InputInfo, e: &WindowEvent) {
                 .. 
             }, .. 
         } => {
-            let input_str = input_to_string(keycode, &input_info.modifiers);
+            let input_str = input_to_string(keycode, &engine.input.modifiers);
             
             if !keycode_to_str::NON_STANDALONE_KEYS.contains(&keycode) && // Disallow CTRL, SHIFT and the like
-                    !input_info.pressed_keys.contains(&keycode) &&        // No repeats
-                    input_info.handlers.contains_key(&input_str) {        // only if a handler exists
-                input_info.handlers[&input_str]();
-                input_info.pressed_keys.insert(keycode.clone());
+                    !engine.input.pressed_keys.contains(&keycode) &&        // No repeats
+                    engine.input.handlers.contains_key(&input_str) {        // only if a handler exists
+                engine.input.handlers[&input_str](engine);
+                engine.input.pressed_keys.insert(keycode.clone());
             }
         },
         WindowEvent::KeyboardInput { 
@@ -111,14 +111,14 @@ pub fn handle_event(input_info: &mut InputInfo, e: &WindowEvent) {
                 .. 
             }, .. 
         } => {
-            input_info.pressed_keys.remove(keycode);
+            engine.input.pressed_keys.remove(keycode);
         },
         WindowEvent::CursorMoved {
             position: pos,
             ..
         } => {
-            input_info.mousex = pos.x;
-            input_info.mousey = pos.y;
+            engine.input.mousex = pos.x;
+            engine.input.mousey = pos.y;
         },
         WindowEvent::MouseInput {
             button,
@@ -126,11 +126,18 @@ pub fn handle_event(input_info: &mut InputInfo, e: &WindowEvent) {
             ..
         } => {
             let h = if *button == MouseButton::Left 
-                        {&input_info.lclick_handler} 
+                        {&engine.input.lclick_handler} 
                     else 
-                        {&input_info.rclick_handler};
-            h(*state == ElementState::Pressed, input_info.mousex, input_info.mousey);
-        }
+                        {&engine.input.rclick_handler};
+            h(*state == ElementState::Pressed, engine.input.mousex, engine.input.mousey);
+        },
+        WindowEvent::Focused(is_focused) => {
+            if *is_focused {
+                engine.acquire_audio_device();
+            } else {
+                engine.destroy_audio_device();
+            }
+        },
         _ => ()
     }
 }
