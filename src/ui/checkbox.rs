@@ -4,7 +4,14 @@ pub struct Checkbox {
 
 impl super::UIElement for Checkbox {
     fn get_verts(&self) -> Vec<super::UIVertex> {
-        Vec::new()
+        vec![
+            super::UIVertex {position: [0.0, 0.0]},
+            super::UIVertex {position: [1.0, 0.0]},
+            super::UIVertex {position: [1.0, 1.0]},
+            super::UIVertex {position: [0.0, 0.0]},
+            super::UIVertex {position: [1.0, 1.0]},
+            super::UIVertex {position: [0.0, 1.0]},
+        ]
     }
 
     fn on_click(&mut self) {

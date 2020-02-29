@@ -46,10 +46,8 @@ macro_rules! deserializable_struct {
 // keybinds (struct with bool ctrl, bool alt, bool shift, and the key)
 deserializable_struct! {
     pub struct Config {
-        // V1.0.0
-        test_value: bool = false,
-
-        // Future versions
+        resolutionX: u32 = 640,
+        resolutionY: u32 = 480,
     }
 }
 

@@ -42,6 +42,12 @@ fn main()
         *control_flow = ControlFlow::Poll;
 
         match event {
+            Event::NewEvents(cause) => {
+                if cause == winit::event::StartCause::Init {
+                    // TODO validate resolution is supported (i.e. not like 117x938)
+                    renderer.resize_window([engine.cfg.resolutionX, engine.cfg.resolutionY]);
+                }
+            }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 window_id,
