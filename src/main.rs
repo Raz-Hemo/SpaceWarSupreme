@@ -13,12 +13,9 @@ mod gameplay;
 mod scripting;
 mod utils;
 mod graphics;
-mod config;
 mod consts;
-mod input;
 mod engine;
 mod ui;
-mod audio;
 
 use gameplay::gamestate::{
     GameStateManager,

@@ -20,6 +20,7 @@ vulkano = "0.17.0"
 vulkano-win = "0.17.0"
 winres = "0.1.11"
 rodio = "0.10.0"
+specs = "0.16.1"
 
 #[profile.release]
 #lto = true
