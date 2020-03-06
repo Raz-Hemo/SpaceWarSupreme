@@ -52,9 +52,9 @@ pub fn load_image<P: AsRef<std::path::Path>>(path: P) -> SWSResult<image::Dynami
     }
 }
 
-pub fn get_game_dependencies() -> HashMap<String, String> {
+pub fn get_game_dependencies() -> Vec<String> {
     let cargo_toml = include_str!("../../Cargo.toml");
-    let mut result = HashMap::<String, String>::new();
+    let mut result = Vec::<String>::new();
     let mut dependencies_found = false;
 
     for line in cargo_toml.lines() {
@@ -64,7 +64,7 @@ pub fn get_game_dependencies() -> HashMap<String, String> {
                 break;
             }
             
-            result.insert(String::from(split_line[0]), split_line[1].replace("\"", ""));
+            result.push(String::from(line));
         }
         if line == "[dependencies]" {
             dependencies_found = true;

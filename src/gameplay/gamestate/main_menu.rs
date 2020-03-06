@@ -17,7 +17,7 @@ impl MainMenuGameState {
             "\n# Rust packages\n" +
             &crate::utils::get_game_dependencies()
                 .iter()
-                .map(|(k, v)| format!("{} {}\n", k, v))
+                .map(|s| format!("{}\n", s))
                 .collect::<String>()
         } else {
             String::from("Credits file not found")
