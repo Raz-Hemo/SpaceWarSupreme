@@ -1,10 +1,12 @@
 extern crate specs;
+extern crate cgmath;
 use specs::{World, WorldExt};
 use crate::gameplay::components;
 
 mod config;
 mod input;
 mod audio;
+mod camera;
 
 pub struct Engine<'a> {
     pub input: input::InputInfo<'a>,
@@ -24,6 +26,7 @@ impl<'a> Engine<'a> {
 
         // ECS init
         result.world.register::<components::PositionComponent>();
+        result.world.insert(camera::Camera::new());
 
         result
     }
