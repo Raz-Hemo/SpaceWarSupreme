@@ -4,5 +4,5 @@ pub struct PositionComponent {
 }
 
 impl specs::Component for PositionComponent {
-    type Storage = specs::VecStorage;
+    type Storage = specs::VecStorage<Self>;
 }

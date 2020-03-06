@@ -133,9 +133,9 @@ pub fn handle_event(engine: &mut crate::engine::Engine, e: &WindowEvent) {
         },
         WindowEvent::Focused(is_focused) => {
             if *is_focused {
-                engine.acquire_audio_device();
+                engine.audio.acquire_audio_device();
             } else {
-                engine.destroy_audio_device();
+                engine.audio.destroy_audio_device();
             }
         },
         _ => ()

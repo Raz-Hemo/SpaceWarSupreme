@@ -1,5 +1,5 @@
 extern crate specs;
-use specs::{World, WorldExt, Builder};
+use specs::{World, WorldExt};
 use crate::gameplay::components;
 
 mod config;
