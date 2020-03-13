@@ -33,7 +33,6 @@ fn main()
         &mut engine,
         Box::new(MainMenuGameState::new())
     );
-    engine.input.add_handler("A", Box::from(|e: &engine::Engine| {e.play_sound("btn_click");}));
 
     eventloop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -49,8 +48,8 @@ fn main()
                 event: WindowEvent::CloseRequested,
                 window_id,
             } if window_id == renderer.get_window().id() => *control_flow = ControlFlow::Exit,
-            Event::WindowEvent { event, .. } => input::handle_event(&mut engine, &event),
-            Event::DeviceEvent { event, .. } => input::handle_device_event(&mut engine.input, &event),
+            Event::WindowEvent { event, .. } => engine.input.handle_window_event(&event),
+            Event::DeviceEvent { event, .. } => engine.input.handle_device_event(&event),
             Event::MainEventsCleared => {
                 game_state_manager.tick(&mut engine);
                 if game_state_manager.should_exit {

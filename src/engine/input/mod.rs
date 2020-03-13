@@ -1,71 +1,99 @@
 use winit::event::{WindowEvent, DeviceEvent, KeyboardInput, ModifiersState, ElementState,
-                   VirtualKeyCode, MouseButton};
-use std::collections::{HashMap, HashSet};
+                   VirtualKeyCode};
+use std::collections::{HashSet};
 mod keycode_to_str;
+mod event_resources;
+use event_resources::{KeyboardEvent, MouseEvent};
 
-pub struct InputInfo<'a> {
+pub struct InputInfo {
     // Ctrl, Alt and Shift state
     modifiers: ModifiersState,
+
+    // Prevent key repeat by keeping track of which keys are already pressed
+    pressed_keys: HashSet<VirtualKeyCode>,
 
     // Pixel position of the mouse relative to top left
     mousex: f64,
     mousey: f64,
 
-    // Mouse click handlers taking is_down, mouse_x, mouse_y
-    lclick_handler: Box<dyn Fn(bool, f64, f64) + 'a>,
-    rclick_handler: Box<dyn Fn(bool, f64, f64) + 'a>,
+    // Tracks window focus
+    is_focused: bool,
 
-    // Maps keybinds to their handlers
-    handlers: HashMap<String, Box<dyn Fn(&crate::engine::Engine) + 'a>>,
-
-    // Prevent key repeat by keeping track of which keys are already pressed
-    pressed_keys: HashSet<VirtualKeyCode>,
+    keyboard_events: Vec<KeyboardEvent>,
+    mouse_events: Vec<MouseEvent>,
 }
 
-impl<'a> InputInfo<'a> {
-    pub fn new() -> InputInfo<'a> {
+impl InputInfo {
+    pub fn new() -> InputInfo {
         InputInfo {
             modifiers: ModifiersState::empty(),
-            handlers: HashMap::new(),
             pressed_keys: HashSet::new(),
             mousex: 0.0,
             mousey:0.0,
-            lclick_handler: Box::new(|_, _, _| ()),
-            rclick_handler: Box::new(|_, _, _| ()),
+            is_focused: false,
+            keyboard_events: Vec::new(),
+            mouse_events: Vec::new(),
         }
     }
 
-    pub fn add_handler(self: &mut InputInfo<'a>, keybind: &str, handler: Box<dyn Fn(&crate::engine::Engine) + 'a>) {
-        self.handlers.insert(String::from(keybind), handler);
+    pub fn handle_device_event(&mut self, e: &DeviceEvent) {
+        match e {
+            DeviceEvent::ModifiersChanged(new_mod) => self.modifiers = new_mod.clone(),
+            _ => ()
+        }
     }
 
-    pub fn remove_handler(self: &mut InputInfo<'a>, keybind: &str) {
-        self.handlers.remove(keybind);
-    }
-    
-    pub fn set_lclick_handler(self: &mut InputInfo<'a>, handler: Box<dyn Fn(bool, f64, f64) + 'a>) {
-        self.lclick_handler = handler;
-    }
+    pub fn handle_window_event(&mut self, e: &WindowEvent) {
+        match e {
+            WindowEvent::KeyboardInput { 
+                input: KeyboardInput { 
+                    state,
+                    virtual_keycode: Some(keycode),
+                    .. 
+                }, .. 
+            } => {
+                let input_str = input_to_string(keycode, &self.modifiers);
 
-    pub fn clear_lclick_handler(self: &mut InputInfo<'a>) {
-        self.lclick_handler = Box::new(|_, _, _| ());
-    }
+                // Disallow CTRL, SHIFT and the like
+                if keycode_to_str::NON_STANDALONE_KEYS.contains(&keycode) { 
+                    return ();
+                }
 
-    pub fn set_rclick_handler(self: &mut InputInfo<'a>, handler: Box<dyn Fn(bool, f64, f64) + 'a>) {
-        self.rclick_handler = handler;
-    }
+                // Skip repeats
+                if self.pressed_keys.contains(&keycode) && *state == ElementState::Pressed {
+                    return ();
+                }
 
-    pub fn clear_rclick_handler(self: &mut InputInfo<'a>) {
-        self.rclick_handler = Box::new(|_, _, _| ());
+                // Add to pressed list if needed
+                if *state == ElementState::Pressed {
+                    self.pressed_keys.insert(keycode.clone());
+                }
+
+                self.keyboard_events.push(KeyboardEvent {key: input_str, is_down: *state == ElementState::Pressed});
+
+            },
+            WindowEvent::CursorMoved {
+                position: pos,
+                ..
+            } => {
+                self.mousex = pos.x;
+                self.mousey = pos.y;
+            },
+            WindowEvent::MouseInput {
+                button,
+                state,
+                ..
+            } => {
+                self.mouse_events.push(MouseEvent::from(*button, *state == ElementState::Pressed));
+            },
+            WindowEvent::Focused(is_focused) => {
+                self.is_focused = *is_focused;
+            },
+            _ => ()
+        }
     }
 }
 
-pub fn handle_device_event(input_info: &mut InputInfo, e: &DeviceEvent) {
-    match e {
-        DeviceEvent::ModifiersChanged(new_mod) => input_info.modifiers = new_mod.clone(),
-        _ => ()
-    }
-}
 
 fn input_to_string(keycode: &VirtualKeyCode, modifiers: &ModifiersState) -> String {
     let mut parts: Vec<&str> = Vec::with_capacity(4);
@@ -84,60 +112,4 @@ fn input_to_string(keycode: &VirtualKeyCode, modifiers: &ModifiersState) -> Stri
     parts.push(&keycode_str);
 
     parts.join("+")
-}
-
-pub fn handle_event(engine: &mut crate::engine::Engine, e: &WindowEvent) {
-    match e {
-        WindowEvent::KeyboardInput { 
-            input: KeyboardInput { 
-                state: ElementState::Pressed,
-                virtual_keycode: Some(keycode),
-                .. 
-            }, .. 
-        } => {
-            let input_str = input_to_string(keycode, &engine.input.modifiers);
-            
-            if !keycode_to_str::NON_STANDALONE_KEYS.contains(&keycode) && // Disallow CTRL, SHIFT and the like
-                    !engine.input.pressed_keys.contains(&keycode) &&        // No repeats
-                    engine.input.handlers.contains_key(&input_str) {        // only if a handler exists
-                engine.input.handlers[&input_str](engine);
-                engine.input.pressed_keys.insert(keycode.clone());
-            }
-        },
-        WindowEvent::KeyboardInput { 
-            input: KeyboardInput { 
-                state: ElementState::Released,
-                virtual_keycode: Some(keycode),
-                .. 
-            }, .. 
-        } => {
-            engine.input.pressed_keys.remove(keycode);
-        },
-        WindowEvent::CursorMoved {
-            position: pos,
-            ..
-        } => {
-            engine.input.mousex = pos.x;
-            engine.input.mousey = pos.y;
-        },
-        WindowEvent::MouseInput {
-            button,
-            state,
-            ..
-        } => {
-            let h = if *button == MouseButton::Left 
-                        {&engine.input.lclick_handler} 
-                    else 
-                        {&engine.input.rclick_handler};
-            h(*state == ElementState::Pressed, engine.input.mousex, engine.input.mousey);
-        },
-        WindowEvent::Focused(is_focused) => {
-            if *is_focused {
-                engine.audio.acquire_audio_device();
-            } else {
-                engine.audio.destroy_audio_device();
-            }
-        },
-        _ => ()
-    }
 }
