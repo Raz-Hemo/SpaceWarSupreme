@@ -8,16 +8,16 @@ mod input;
 mod audio;
 mod camera;
 
-pub struct Engine<'a> {
-    pub input: input::InputInfo<'a>,
+pub struct Engine {
+    pub input: input::InputInfo,
     pub cfg: config::Config,
     pub world: World,
     pub audio: audio::AudioManager,
 }
 
-impl<'a> Engine<'a> {
-    pub fn new() -> Engine<'a> {
-        let result = Engine {
+impl Engine {
+    pub fn new() -> Engine {
+        let mut result = Engine {
             input: input::InputInfo::new(),
             cfg: config::Config::load(),
             audio: audio::AudioManager::new(),
