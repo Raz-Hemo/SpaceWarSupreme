@@ -20,7 +20,7 @@ impl MouseEvent {
         MouseEvent {
             key: match b {
                 winit::event::MouseButton::Left => MouseClickType::Left,
-                winit::event::MouseButton::Left => MouseClickType::Left,
+                winit::event::MouseButton::Right => MouseClickType::Right,
                 winit::event::MouseButton::Middle => MouseClickType::Middle,
                 _ => MouseClickType::Other,
             },
