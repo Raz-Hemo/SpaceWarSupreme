@@ -1,4 +1,5 @@
 extern crate vulkano;
+extern crate vulkano_shaders;
 
 use std::sync::Arc;
 
@@ -160,6 +161,8 @@ impl Renderer {
     "
             }
         }
+        let vs = vs::Shader::load(device.clone()).expect("Failed to create Vertex Shader");
+        let fs = fs::Shader::load(device.clone()).expect("Failed to create Fragment Shader");
 
         let pipeline = Arc::new(GraphicsPipeline::start()
         .vertex_input_single_buffer()
