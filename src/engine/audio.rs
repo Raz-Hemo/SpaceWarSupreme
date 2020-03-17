@@ -1,6 +1,6 @@
 use std::sync::mpsc::channel;
 
-enum SoundEvent {
+pub enum SoundEvent {
     Play(ArcSoundBank, SoundID),
     AcquireDevice,
     DestroyDevice,

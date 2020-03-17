@@ -27,7 +27,7 @@ fn main()
     log::info("Starting Space War Supreme!");
 
     let eventloop = EventLoop::new();
-    let renderer = graphics::renderer::Renderer::new(&eventloop);
+    let mut renderer = graphics::renderer::Renderer::new(&eventloop);
     let mut engine = engine::Engine::new();
     let mut game_state_manager = GameStateManager::new(
         &mut engine,
@@ -39,6 +39,7 @@ fn main()
 
         match event {
             Event::NewEvents(cause) => {
+                renderer.get_supported_resolutions();
                 if cause == winit::event::StartCause::Init {
                     // TODO validate resolution is supported (i.e. not like 117x938)
                     renderer.resize_window([engine.cfg.resolutionX, engine.cfg.resolutionY]);
