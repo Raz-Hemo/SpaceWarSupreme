@@ -37,14 +37,11 @@ impl InputInfo {
     }
 
     pub fn handle_device_event(&mut self, e: &DeviceEvent) {
-        match e {
-            DeviceEvent::ModifiersChanged(new_mod) => self.modifiers = new_mod.clone(),
-            _ => ()
-        }
     }
 
     pub fn handle_window_event(&mut self, e: &WindowEvent) {
         match e {
+            WindowEvent::ModifiersChanged(new_mod) => self.modifiers = new_mod.clone(),
             WindowEvent::KeyboardInput { 
                 input: KeyboardInput { 
                     state,
