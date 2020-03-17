@@ -46,8 +46,8 @@ macro_rules! deserializable_struct {
 // keybinds (struct with bool ctrl, bool alt, bool shift, and the key)
 deserializable_struct! {
     pub struct Config {
-        resolutionX: u32 = 640,
-        resolutionY: u32 = 480,
+        resolution_x: u32 = 640,
+        resolution_y: u32 = 480,
     }
 }
 

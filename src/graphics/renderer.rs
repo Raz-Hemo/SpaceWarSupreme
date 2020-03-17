@@ -9,9 +9,11 @@ use winit::{
     event_loop::EventLoop,
 }; 
 use vulkano::sync::SharingMode;
-use vulkano::swapchain::{Swapchain, SurfaceTransform, Surface, PresentMode, CompositeAlpha,
+use vulkano::swapchain::{
+    display::Display,
+    Swapchain, SurfaceTransform, Surface, PresentMode, CompositeAlpha,
                          FullscreenExclusive, ColorSpace};
-use vulkano::instance::{Instance, PhysicalDevice, PhysicalDeviceType};
+use vulkano::instance::{InstanceExtensions, Instance, PhysicalDevice, PhysicalDeviceType};
 use vulkano::device::{Device, DeviceExtensions, Features, Queue};
 use vulkano::framebuffer::{RenderPassAbstract, Subpass, FramebufferAbstract, Framebuffer};
 use vulkano::pipeline::{GraphicsPipeline, GraphicsPipelineAbstract, viewport::Viewport};
@@ -21,6 +23,12 @@ type SWSSwapchain = Arc<Swapchain<Window>>;
 type SWSFramebuffer = Arc<dyn FramebufferAbstract + Send + Sync>;
 type SWSRenderPass = Arc<dyn RenderPassAbstract + Send + Sync>;
 type SWSPipeline = Arc<dyn GraphicsPipelineAbstract>;
+
+#[derive(Default, Debug, Clone)]
+struct UIVertex {
+    position: [f32; 2],
+}
+vulkano::impl_vertex!(UIVertex, position);
 
 pub struct Renderer {
     surface: Arc<Surface<Window>>,
@@ -61,7 +69,10 @@ impl Renderer {
         // Create instance + window
         let instance = Instance::new(
             None,
-            &vulkano_win::required_extensions(),
+            &InstanceExtensions {
+                //khr_display: true,
+                .. vulkano_win::required_extensions()
+            },
             None).expect("Failed to create Vulkan instance");
         let surface = crate::graphics::window::make_window(eventloop, instance.clone());
         
@@ -165,7 +176,7 @@ impl Renderer {
         let fs = fs::Shader::load(device.clone()).expect("Failed to create Fragment Shader");
 
         let pipeline = Arc::new(GraphicsPipeline::start()
-        .vertex_input_single_buffer()
+        .vertex_input_single_buffer::<UIVertex>()
         .triangle_list()
         .vertex_shader(vs.main_entry_point(), ())
         .fragment_shader(fs.main_entry_point(), ())
@@ -200,7 +211,7 @@ impl Renderer {
         (new_swapchain,
         new_images.iter().map(|image| {
             Arc::new(
-                Framebuffer::start(&render_pass.clone())
+                Framebuffer::start(render_pass.clone())
                 .add(image.clone()).expect("Failed to add attachment to framebuffer")
                 .build().expect("Failed to create framebuffer")
             ) as Arc<dyn FramebufferAbstract + Send + Sync>
@@ -212,7 +223,7 @@ impl Renderer {
         }])
     }
 
-    pub fn resize_window(&self, dims: [u32; 2]) {
+    pub fn resize_window(&mut self, dims: [u32; 2]) {
         let (swapchain, framebuffers, viewports) = Renderer::window_size_dependent_setup(
             dims,
             self.swapchain.clone(),
@@ -226,5 +237,16 @@ impl Renderer {
     pub fn acquire(&self) {
         let (image_num, suboptimal, acquire_future) =
             vulkano::swapchain::acquire_next_image(self.swapchain.clone(), None).unwrap();
+    }
+
+    pub fn get_supported_resolutions(&self) -> Vec<[u32; 2]> {
+        let mut result: Vec<[u32; 2]> = Vec::new();
+        for display in Display::enumerate(pick_best_physical_device(&self.instance)) {
+            for mode in display.display_modes() {
+                result.push(mode.visible_region());
+            }
+        }
+
+        result
     }
 }

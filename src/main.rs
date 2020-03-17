@@ -39,7 +39,7 @@ fn main()
 
         match event {
             Event::NewEvents(cause) => {
-                renderer.get_supported_resolutions();
+                //println!("{:?}", renderer.get_supported_resolutions());
                 if cause == winit::event::StartCause::Init {
                     // TODO validate resolution is supported (i.e. not like 117x938)
                     renderer.resize_window([engine.cfg.resolutionX, engine.cfg.resolutionY]);
