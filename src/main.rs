@@ -27,8 +27,8 @@ fn main()
     log::info("Starting Space War Supreme!");
 
     let eventloop = EventLoop::new();
-    let mut renderer = graphics::renderer::Renderer::new(&eventloop);
     let mut engine = engine::Engine::new();
+    let mut renderer = graphics::renderer::Renderer::new(&eventloop, &engine.cfg);
     let mut game_state_manager = GameStateManager::new(
         &mut engine,
         Box::new(MainMenuGameState::new())
@@ -38,13 +38,6 @@ fn main()
         *control_flow = ControlFlow::Poll;
 
         match event {
-            Event::NewEvents(cause) => {
-                //println!("{:?}", renderer.get_supported_resolutions());
-                if cause == winit::event::StartCause::Init {
-                    // TODO validate resolution is supported (i.e. not like 117x938)
-                    renderer.resize_window([engine.cfg.resolutionX, engine.cfg.resolutionY]);
-                }
-            }
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 window_id,
@@ -60,7 +53,7 @@ fn main()
                 renderer.get_window().request_redraw();
             },
             Event::RedrawRequested(_window_id) => {
-                // TODO this is where rendering code sits
+                renderer.draw_frame(&engine);
             },
             _ => (),
         }

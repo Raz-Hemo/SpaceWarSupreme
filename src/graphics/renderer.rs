@@ -8,16 +8,16 @@ use winit::{
     window::Window,
     event_loop::EventLoop,
 }; 
-use vulkano::sync::SharingMode;
+use vulkano::sync::{SharingMode, GpuFuture, FlushError};
 use vulkano::swapchain::{
     display::Display,
-    Swapchain, SurfaceTransform, Surface, PresentMode, CompositeAlpha,
-                         FullscreenExclusive, ColorSpace};
+    AcquireError, Swapchain, SurfaceTransform, Surface, PresentMode, CompositeAlpha,
+    FullscreenExclusive, ColorSpace};
 use vulkano::instance::{InstanceExtensions, Instance, PhysicalDevice, PhysicalDeviceType};
 use vulkano::device::{Device, DeviceExtensions, Features, Queue};
 use vulkano::framebuffer::{RenderPassAbstract, Subpass, FramebufferAbstract, Framebuffer};
 use vulkano::pipeline::{GraphicsPipeline, GraphicsPipelineAbstract, viewport::Viewport};
-use vulkano::command_buffer::DynamicState;
+use vulkano::command_buffer::{DynamicState, AutoCommandBufferBuilder};
 
 type SWSSwapchain = Arc<Swapchain<Window>>;
 type SWSFramebuffer = Arc<dyn FramebufferAbstract + Send + Sync>;
@@ -30,7 +30,10 @@ struct UIVertex {
 }
 vulkano::impl_vertex!(UIVertex, position);
 
+const MAX_FRAMES_IN_QUEUE: usize = 2;
+
 pub struct Renderer {
+    resolution: [u32; 2],
     surface: Arc<Surface<Window>>,
     swapchain: Arc<Swapchain<Window>>,
     instance: Arc<Instance>,
@@ -41,6 +44,8 @@ pub struct Renderer {
     framebuffers: Vec<SWSFramebuffer>,
     render_pass: SWSRenderPass,
     pipeline: SWSPipeline,
+
+    previous_frame_ends: Vec<Box<dyn GpuFuture>>,
 }
 
 impl Renderer {
@@ -65,7 +70,7 @@ fn pick_best_physical_device(inst: &Arc<Instance>) -> PhysicalDevice {
 }
 
 impl Renderer {
-    pub fn new(eventloop: &EventLoop<()>) -> Renderer {
+    pub fn new(eventloop: &EventLoop<()>, cfg: &crate::engine::config::Config) -> Renderer {
         // Create instance + window
         let instance = Instance::new(
             None,
@@ -100,12 +105,12 @@ impl Renderer {
         let caps = surface.capabilities(physical_device)
             .expect("Failed to get surface capabilities");
 
-        let (swapchain, swapchain_images) = Swapchain::new(
+        let (swapchain, _swapchain_images) = Swapchain::new(
             device.clone(),
             surface.clone(),
             caps.min_image_count, // number of buffers
             caps.supported_formats[0].0,
-            caps.current_extent.unwrap_or([640, 480]),
+            caps.current_extent.unwrap_or([cfg.resolution_x, cfg.resolution_y]),
             1, // layers of each buffer
             caps.supported_usage_flags,
             SharingMode::Exclusive,
@@ -185,6 +190,12 @@ impl Renderer {
         .build(device.clone())
         .unwrap());
 
+        let mut previous_frame_ends = Vec::new();
+        for i in 0..MAX_FRAMES_IN_QUEUE {
+            previous_frame_ends.push(Box::new(vulkano::sync::now(device.clone())) 
+                                 as Box<dyn GpuFuture>);
+        }
+
         Renderer {
             instance,
             surface,
@@ -195,6 +206,8 @@ impl Renderer {
             render_pass,
             pipeline,
             dynamic_state,
+            previous_frame_ends,
+            resolution: [cfg.resolution_x, cfg.resolution_y],
         }
     }
 
@@ -234,9 +247,46 @@ impl Renderer {
         self.dynamic_state.viewports = Some(viewports);
     }
 
-    pub fn acquire(&self) {
+    pub fn draw_frame(&mut self, engine: &crate::engine::Engine) {
+        // Wait for one of the previous frames to finish by dropping it
+        self.previous_frame_ends.remove(0).cleanup_finished();
+
         let (image_num, suboptimal, acquire_future) =
-            vulkano::swapchain::acquire_next_image(self.swapchain.clone(), None).unwrap();
+            match vulkano::swapchain::acquire_next_image(self.swapchain.clone(), None) {
+                Ok(r) => r,
+                Err(e) => panic!("Acquire swapchain failed: {:?}", e),
+        };
+        if suboptimal {
+            self.resize_window(self.resolution);
+        }
+
+        let command_buffer = AutoCommandBufferBuilder::primary_one_time_submit(self.device.clone(), self.queue.family())
+            .expect("Failed to create command buffer builder")
+            .begin_render_pass(self.framebuffers[image_num].clone(), false, vec![[0.5, 0.0, 0.0, 1.0].into()]).expect("Failed to begin render pass")
+            //.draw(self.pipeline.clone(), &self.dynamic_state, vertex_buffer.clone(), (), ()).unwrap()
+            .end_render_pass().expect("Failed to end render pass")
+            .build().expect("Failed to build command buffer");
+
+        let future = vulkano::sync::now(self.device.clone())
+            .join(acquire_future)
+            .then_execute(self.queue.clone(), command_buffer)
+            .expect("Failed to add command buffer")
+            .then_swapchain_present(self.queue.clone(), self.swapchain.clone(), image_num)
+            .then_signal_fence_and_flush();
+
+        match future {
+            Ok(f) => {
+                self.previous_frame_ends.push(Box::new(f) as Box<dyn GpuFuture>);
+            }
+            Err(FlushError::OutOfDate) => {
+                self.resize_window(self.resolution);
+                self.previous_frame_ends.push(Box::new(vulkano::sync::now(self.device.clone())));
+            }
+            Err(e) => {
+                crate::log::error(&format!("{:?}", e));
+                self.previous_frame_ends.push(Box::new(vulkano::sync::now(self.device.clone())));
+            }
+        }
     }
 
     pub fn get_supported_resolutions(&self) -> Vec<[u32; 2]> {

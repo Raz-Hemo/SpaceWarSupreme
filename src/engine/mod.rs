@@ -3,7 +3,7 @@ extern crate cgmath;
 use specs::{World, WorldExt};
 use crate::gameplay::components;
 
-mod config;
+pub mod config;
 mod input;
 mod audio;
 mod camera;
@@ -26,7 +26,7 @@ impl Engine {
 
         // ECS init
         result.world.register::<components::PositionComponent>();
-        result.world.insert(camera::Camera::new());
+        //result.world.insert(camera::Camera::new());
 
         result
     }

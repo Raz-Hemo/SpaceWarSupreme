@@ -1,23 +1,26 @@
+use cgmath::{Matrix4, Point3, Vector3, perspective, Deg};
+
 pub struct Camera {
-    pos: cgmath::Vector3<f32>,
-    pitch: f32,
-    yaw: f32,
-    roll: f32,
+    pos: Point3<f32>,
+    look_at: Point3<f32>,
+    projection: Matrix4<f32>
 }
 
 impl Camera {
-    pub fn new() -> Camera {
+    pub fn new(resolution_x: u32, resolution_y: u32, fovy_deg: f32) -> Camera {
+        let aspect = resolution_x as f32 / resolution_y as f32;
         Camera {
-            pos: cgmath::Vector3::new(0.0, 0.0, 0.0),
-            pitch: 0.0,
-            yaw: 0.0,
-            roll: 0.0
+            pos: Point3::new(0.0, 0.0, 0.0),
+            look_at: Point3::new(0.0, 0.0, 1.0),
+            projection: perspective(Deg(fovy_deg), aspect, 0.01, 10000.0),
         }
     }
-}
 
-impl Default for Camera {
-    fn default() -> Self {
-        Camera::new()
+    pub fn get_view_matrix(&self) -> Matrix4<f32> {
+        Matrix4::look_at(self.pos, self.look_at, Vector3::new(0.0, 1.0, 0.0))
+    }
+
+    pub fn get_projection_matrix(&self) -> Matrix4<f32> {
+        self.projection
     }
 }
