@@ -1,12 +1,12 @@
 extern crate specs;
 extern crate cgmath;
 use specs::{World, WorldExt};
-use crate::gameplay::components;
 
 pub mod config;
 mod input;
 mod audio;
 mod camera;
+mod components;
 
 pub struct Engine {
     pub input: input::InputInfo,
