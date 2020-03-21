@@ -42,10 +42,6 @@ impl super::GameState for MainMenuGameState {
         //let mut b = Button::new(); b.set_pos();
     }
 
-    fn render(&self, renderer: &crate::graphics::renderer::Renderer) {
-
-    }
-
     fn tick(&mut self, engine: &mut crate::engine::Engine, delta: Duration) -> super::GameStateAction {
         if self.should_exit {
             super::GameStateAction::Pop

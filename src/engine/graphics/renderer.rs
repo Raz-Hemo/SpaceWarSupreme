@@ -83,7 +83,7 @@ impl Renderer {
                 .. vulkano_win::required_extensions()
             },
             None).expect("Failed to create Vulkan instance");
-        let surface = crate::graphics::window::make_window(eventloop, instance.clone());
+        let surface = super::window::make_window(eventloop, instance.clone());
         
         // Pick a physical device (i.e. GPU)
         let physical_device = pick_best_physical_device(&instance);

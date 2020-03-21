@@ -14,7 +14,6 @@ pub trait GameState {
     fn cleanup(&mut self, engine: &mut crate::engine::Engine);
     fn init(&mut self, engine: &mut crate::engine::Engine);
 
-    fn render(&self, renderer: &crate::graphics::renderer::Renderer);
     fn tick(&mut self, engine: &mut crate::engine::Engine, delta: Duration) -> GameStateAction;
 }
 

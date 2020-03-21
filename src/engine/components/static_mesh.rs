@@ -1,7 +1,6 @@
 use std::sync::Arc;
-use crate::engine::graphics::model::Model;
+use crate::engine::graphics::Model;
 
-#[derive(Debug)]
 pub struct StaticMeshComponent {
     model: Arc<Model>,
 }

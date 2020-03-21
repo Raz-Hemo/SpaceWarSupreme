@@ -12,7 +12,6 @@ mod log;
 mod gameplay;
 mod scripting;
 mod utils;
-mod graphics;
 mod consts;
 mod engine;
 mod ui;
