@@ -7,6 +7,7 @@ mod input;
 mod audio;
 mod camera;
 mod components;
+mod models;
 
 pub struct Engine {
     pub renderer: crate::graphics::renderer::Renderer,
