@@ -32,8 +32,12 @@ vulkano::impl_vertex!(UIVertex, position);
 
 const MAX_FRAMES_IN_QUEUE: usize = 2;
 
+pub enum DrawResult {
+    Success,
+    ResizeNeeded,
+}
+
 pub struct Renderer {
-    resolution: [u32; 2],
     surface: Arc<Surface<Window>>,
     swapchain: Arc<Swapchain<Window>>,
     instance: Arc<Instance>,
@@ -70,7 +74,7 @@ fn pick_best_physical_device(inst: &Arc<Instance>) -> PhysicalDevice {
 }
 
 impl Renderer {
-    pub fn new(eventloop: &EventLoop<()>, cfg: &crate::engine::config::Config) -> Renderer {
+    pub fn new(eventloop: &EventLoop<()>) -> Renderer {
         // Create instance + window
         let instance = Instance::new(
             None,
@@ -110,7 +114,8 @@ impl Renderer {
             surface.clone(),
             caps.min_image_count, // number of buffers
             caps.supported_formats[0].0,
-            caps.current_extent.unwrap_or([cfg.resolution_x, cfg.resolution_y]),
+            // Start with 640x480. Immediately resized later
+            caps.current_extent.unwrap_or([640, 480]),
             1, // layers of each buffer
             caps.supported_usage_flags,
             SharingMode::Exclusive,
@@ -207,7 +212,6 @@ impl Renderer {
             pipeline,
             dynamic_state,
             previous_frame_ends,
-            resolution: [cfg.resolution_x, cfg.resolution_y],
         }
     }
 
@@ -247,7 +251,7 @@ impl Renderer {
         self.dynamic_state.viewports = Some(viewports);
     }
 
-    pub fn draw_frame(&mut self, engine: &crate::engine::Engine) {
+    pub fn draw_frame(&mut self) -> DrawResult {
         // Wait for one of the previous frames to finish by dropping it
         self.previous_frame_ends.remove(0).cleanup_finished();
 
@@ -257,7 +261,7 @@ impl Renderer {
                 Err(e) => panic!("Acquire swapchain failed: {:?}", e),
         };
         if suboptimal {
-            self.resize_window(self.resolution);
+            return DrawResult::ResizeNeeded
         }
 
         let command_buffer = AutoCommandBufferBuilder::primary_one_time_submit(self.device.clone(), self.queue.family())
@@ -277,14 +281,15 @@ impl Renderer {
         match future {
             Ok(f) => {
                 self.previous_frame_ends.push(Box::new(f) as Box<dyn GpuFuture>);
+                DrawResult::Success
             }
             Err(FlushError::OutOfDate) => {
-                self.resize_window(self.resolution);
                 self.previous_frame_ends.push(Box::new(vulkano::sync::now(self.device.clone())));
+                DrawResult::ResizeNeeded
             }
             Err(e) => {
-                crate::log::error(&format!("{:?}", e));
                 self.previous_frame_ends.push(Box::new(vulkano::sync::now(self.device.clone())));
+                panic!("Draw frame failed: {:?}", e);
             }
         }
     }

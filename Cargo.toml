@@ -22,6 +22,7 @@ vulkano-shaders = "0.18.0"
 winres = "0.1.11"
 rodio = "0.10.0"
 specs = "0.16.1"
+tobj = "0.1.12"
 cgmath = "0.17.0"
 
 #[profile.release]
