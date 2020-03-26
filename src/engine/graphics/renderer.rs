@@ -222,6 +222,7 @@ impl Renderer {
     }
 
     pub fn resize_window(&mut self, dims: [u32; 2]) {
+        self.surface.window().set_inner_size(winit::dpi::LogicalSize::new(dims[0], dims[1]));
         let (swapchain, framebuffers) = Renderer::window_size_dependent_setup(
             dims,
             self.device.clone(),
