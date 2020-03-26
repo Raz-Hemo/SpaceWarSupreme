@@ -39,7 +39,7 @@ impl Engine {
         result.world.register::<components::PositionComponent>();
         result.world.register::<components::StaticMeshComponent>();
         result.world.create_entity().with(components::StaticMeshComponent{
-            model: result.renderer.models_manager.get_id("cube"),
+            model: result.renderer.models_manager.get_id("testmodel.obj"),
             mesh_instance: MeshInstance::new()
         }).build();
         let mut cam = camera::Camera::new(
@@ -68,7 +68,7 @@ impl Engine {
         {
             let mut cam = self.world.write_resource::<camera::Camera>();
             let t = self.start_time.elapsed().as_millis() as f32 * 0.002;
-            (*cam).pos = cgmath::Point3 { x: 5.0 * t.cos(), y: 2.0 * t.sin(), z: 5.0 * t.sin() };
+            (*cam).pos = cgmath::Point3 { x: 12.0 * t.cos(), y: -6.0, z: 12.0 * t.sin() };
         }
 
         match self.renderer_draw_frame() {

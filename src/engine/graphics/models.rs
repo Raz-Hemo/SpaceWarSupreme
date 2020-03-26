@@ -1,7 +1,11 @@
+extern crate itertools;
+
 use std::sync::Arc;
 use std::collections::HashMap;
 use vulkano::buffer::{ImmutableBuffer, BufferUsage};
 use vulkano::device::Queue;
+use tobj;
+use itertools::izip;
 
 #[derive(Default, Debug, Clone)]
 pub struct Vertex {
@@ -17,12 +21,52 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn from<P: AsRef<std::path::Path>>(filename: P, queue: &Arc<Queue>) -> Option<Arc<Model>> {
-        Some(Model::cube(queue))
-        //Some(Model {
-        //    vertices: ImmutableBuffer::from_iter(, BufferUsage::vertex_buffer(), queue.clone()),
-        //    indices:,
-        //})
+    pub fn from<P: AsRef<std::path::Path>>(filename: P, queue: &Arc<Queue>) -> crate::utils::SWSResult<Arc<Model>> {
+        let obj = tobj::load_obj(&std::path::Path::new("./resources/models/").join(filename));
+        if let Err(e) = obj {
+            return Err(format!("Model does not exist: {:?}", e));
+        }
+        let (models, _materials) = obj.unwrap();
+        let mut indices: Vec<u32> = Vec::new();
+        let mut vertices: Vec<Vertex> = Vec::new();
+
+        for m in models.iter() {
+            if m.mesh.texcoords.is_empty() {
+                return Err(String::from("Model is missing texcoords"));
+            }
+            if m.mesh.normals.is_empty() {
+                return Err(String::from("Model is missing normals"));
+            }
+
+            // Indices are model-relative, and we flatten them to a single buffer,
+            // so add the base index where we put our model.
+            let indices_base = vertices.len() as u32;
+            for i in m.mesh.indices.iter() {
+                indices.push(indices_base + i);
+            }
+
+            for (p, n, t) in izip!(m.mesh.positions.chunks(3), m.mesh.normals.chunks(3), m.mesh.texcoords.chunks(2))  {
+                vertices.push(Vertex {
+                    // Reverse Y axis because we are in Vulkan
+                    position: [p[0], -p[1], p[2]],
+                    normal: [n[0], n[1], n[2]],
+                    texcoord: [t[0], t[1]],
+                });
+            }
+        }
+
+        let vertices = match ImmutableBuffer::from_iter(vertices.iter().cloned(), BufferUsage::vertex_buffer(), queue.clone()) {
+            Ok((buf, _future)) => buf,
+            Err(e) => return Err(format!("{:?}", e)),
+        };
+        let indices = match ImmutableBuffer::from_iter(indices.iter().cloned(), BufferUsage::index_buffer(), queue.clone()) {
+            Ok((buf, _future)) => buf,
+            Err(e) => return Err(format!("{:?}", e)),
+        };
+        Ok(Arc::new(Model {
+            vertices,
+            indices,
+        }))
     }
 
     pub fn cube(queue: &Arc<Queue>) -> Arc<Model> {
@@ -217,10 +261,12 @@ impl ModelsManager {
         }
 
         // Try load
-        let model = match Model::from(String::from("models\\") + name, &self.queue) {
-            Some(data) => data,
-            None => {
-                crate::log::warning(&format!("Model {} not found, loading cube instead", name));
+        let model = match Model::from(name, &self.queue) {
+            Ok(data) => data,
+            Err(e) => {
+                crate::log::warning(&format!(
+                    "Model {} not found ({}), loading cube instead", name, e
+                ));
                 return 0
             }
         };
