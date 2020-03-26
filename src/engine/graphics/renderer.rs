@@ -113,8 +113,8 @@ impl Renderer {
             surface.clone(),
             caps.min_image_count, // number of buffers
             caps.supported_formats[0].0,
-            // Start with 640x480. Immediately resized later
-            caps.current_extent.unwrap_or([640, 480]),
+            // Start with default resolution. Immediately resized later
+            caps.current_extent.unwrap_or(crate::consts::DEFAULT_RESOLUTION),
             1, // layers of each buffer
             caps.supported_usage_flags,
             SharingMode::Exclusive,
@@ -149,7 +149,7 @@ impl Renderer {
         ).expect("Failed to create render pass"));
 
         let (swapchain, framebuffers) = Renderer::window_size_dependent_setup(
-            [640, 480],
+            crate::consts::DEFAULT_RESOLUTION,
             device.clone(),
             swapchain.clone(),
             render_pass.clone()
@@ -166,7 +166,8 @@ impl Renderer {
         .viewports_dynamic_scissors_irrelevant(1)
         .viewports(std::iter::once(Viewport {
             origin: [0.0, 0.0],
-            dimensions: [640.0, 480.0],
+            dimensions: [crate::consts::DEFAULT_RESOLUTION[0] as f32,
+                         crate::consts::DEFAULT_RESOLUTION[1] as f32],
             depth_range: 0.0 .. 1.0,
         }))
         .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())

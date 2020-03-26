@@ -5,3 +5,5 @@ pub const ICON_PATH: &str = "./resources/icon.ico";
 pub const SOUND_FOLDER_PATH: &str = "./resources/sounds";
 
 pub const WINDOW_NAME: &str = "Space War Supreme!";
+
+pub const DEFAULT_RESOLUTION: [u32; 2] = [1280, 720];

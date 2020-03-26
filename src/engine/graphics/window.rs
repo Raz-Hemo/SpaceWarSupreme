@@ -31,7 +31,9 @@ pub fn make_window(eventloop: &EventLoop<()>, instance: Arc<Instance>) -> Arc<Su
     // Build the window
     WindowBuilder::new()
         .with_title(crate::consts::WINDOW_NAME)
-        .with_inner_size(LogicalSize::new(640, 480))
+        .with_inner_size(LogicalSize::new(
+            crate::consts::DEFAULT_RESOLUTION[0], 
+            crate::consts::DEFAULT_RESOLUTION[1]))
         .with_window_icon(icon)
         .with_resizable(false)
         .build_vk_surface(&eventloop, instance)
