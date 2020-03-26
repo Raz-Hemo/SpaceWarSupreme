@@ -1,14 +1,16 @@
-use std::sync::Arc;
-use crate::engine::graphics::Model;
+use crate::engine::graphics::ModelID;
+use crate::engine::systems::MeshInstance;
 
 pub struct StaticMeshComponent {
-    model: Arc<Model>,
+    pub model: ModelID,
+    pub mesh_instance: MeshInstance,
 }
 
 impl StaticMeshComponent {
-    pub fn new(model: Arc<Model>) -> StaticMeshComponent {
+    pub fn new(model: ModelID) -> StaticMeshComponent {
         StaticMeshComponent {
-            model
+            model,
+            mesh_instance: MeshInstance::new(),
         }
     }
 }

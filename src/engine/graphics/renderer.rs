@@ -2,7 +2,6 @@ extern crate vulkano;
 extern crate vulkano_shaders;
 
 use std::sync::Arc;
-
 use vulkano_win;
 use winit::{
     window::Window,
@@ -11,24 +10,24 @@ use winit::{
 use vulkano::sync::{SharingMode, GpuFuture, FlushError};
 use vulkano::swapchain::{
     display::Display,
-    AcquireError, Swapchain, SurfaceTransform, Surface, PresentMode, CompositeAlpha,
+    Swapchain, SurfaceTransform, Surface, PresentMode, CompositeAlpha,
     FullscreenExclusive, ColorSpace};
 use vulkano::instance::{InstanceExtensions, Instance, PhysicalDevice, PhysicalDeviceType};
 use vulkano::device::{Device, DeviceExtensions, Features, Queue};
 use vulkano::framebuffer::{RenderPassAbstract, Subpass, FramebufferAbstract, Framebuffer};
-use vulkano::pipeline::{GraphicsPipeline, GraphicsPipelineAbstract, viewport::Viewport};
+use vulkano::pipeline::{GraphicsPipeline, GraphicsPipelineAbstract, viewport::Viewport,
+    vertex::OneVertexOneInstanceDefinition};
 use vulkano::command_buffer::{DynamicState, AutoCommandBufferBuilder};
+use vulkano::format::Format;
+use vulkano::image::attachment::AttachmentImage;
+
+use super::models::ModelsManager;
+use crate::engine::systems::{InstanceBuffers, MeshInstance};
 
 type SWSSwapchain = Arc<Swapchain<Window>>;
 type SWSFramebuffer = Arc<dyn FramebufferAbstract + Send + Sync>;
 type SWSRenderPass = Arc<dyn RenderPassAbstract + Send + Sync>;
-type SWSPipeline = Arc<dyn GraphicsPipelineAbstract>;
-
-#[derive(Default, Debug, Clone)]
-struct UIVertex {
-    position: [f32; 2],
-}
-vulkano::impl_vertex!(UIVertex, position);
+type SWSPipeline = Arc<dyn GraphicsPipelineAbstract + Send + Sync>;
 
 const MAX_FRAMES_IN_QUEUE: usize = 2;
 
@@ -41,15 +40,15 @@ pub struct Renderer {
     surface: Arc<Surface<Window>>,
     swapchain: Arc<Swapchain<Window>>,
     instance: Arc<Instance>,
-    device: Arc<Device>,
-    queue: Arc<Queue>,
-    dynamic_state: DynamicState,
+    pub device: Arc<Device>,
+    pub queue: Arc<Queue>,
 
     framebuffers: Vec<SWSFramebuffer>,
     render_pass: SWSRenderPass,
     pipeline: SWSPipeline,
 
     previous_frame_ends: Vec<Box<dyn GpuFuture>>,
+    pub models_manager: ModelsManager,
 }
 
 impl Renderer {
@@ -135,71 +134,53 @@ impl Renderer {
                     store: Store,
                     format: swapchain.format(),
                     samples: 1,
+                },
+                depth: {
+                    load: Clear,
+                    store: DontCare,
+                    format: Format::D16Unorm,
+                    samples: 1,
                 }
             },
             pass: {
                 color: [color],
-                depth_stencil: {}
+                depth_stencil: {depth}
             }
         ).expect("Failed to create render pass"));
 
-        let (swapchain, framebuffers, viewports) = Renderer::window_size_dependent_setup(
+        let (swapchain, framebuffers) = Renderer::window_size_dependent_setup(
             [640, 480],
+            device.clone(),
             swapchain.clone(),
             render_pass.clone()
         );
 
-        let dynamic_state = DynamicState {
-            line_width: None,
-            viewports: Some(viewports),
-            scissors: None,
-            compare_mask: None,
-            write_mask: None,
-            reference: None,
-        };
-
-        mod vs {
-            vulkano_shaders::shader!{
-                ty: "vertex",
-                src: "
-    #version 450
-    layout(location = 0) in vec2 position;
-    void main() {
-        gl_Position = vec4(position, 0.0, 1.0);
-    }"
-            }
-        }
-    
-        mod fs {
-            vulkano_shaders::shader!{
-                ty: "fragment",
-                src: "
-    #version 450
-    layout(location = 0) out vec4 f_color;
-    void main() {
-        f_color = vec4(1.0, 0.0, 0.0, 1.0);
-    }
-    "
-            }
-        }
-        let vs = vs::Shader::load(device.clone()).expect("Failed to create Vertex Shader");
-        let fs = fs::Shader::load(device.clone()).expect("Failed to create Fragment Shader");
+        let vs = super::shaders::vs::Shader::load(device.clone()).expect("Failed to create Vertex Shader");
+        let fs = super::shaders::fs::Shader::load(device.clone()).expect("Failed to create Fragment Shader");
 
         let pipeline = Arc::new(GraphicsPipeline::start()
-        .vertex_input_single_buffer::<UIVertex>()
+        .vertex_input(OneVertexOneInstanceDefinition::<super::models::Vertex, MeshInstance>::new())
         .triangle_list()
         .vertex_shader(vs.main_entry_point(), ())
         .fragment_shader(fs.main_entry_point(), ())
-        .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
         .viewports_dynamic_scissors_irrelevant(1)
+        .viewports(std::iter::once(Viewport {
+            origin: [0.0, 0.0],
+            dimensions: [640.0, 480.0],
+            depth_range: 0.0 .. 1.0,
+        }))
+        .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
+        .depth_stencil_simple_depth()
         .build(device.clone())
         .unwrap());
 
         let mut previous_frame_ends = Vec::new();
-        for i in 0..MAX_FRAMES_IN_QUEUE {
+        for _i in 0..MAX_FRAMES_IN_QUEUE {
             previous_frame_ends.push(Box::new(vulkano::sync::now(device.clone())) 
                                  as Box<dyn GpuFuture>);
         }
+
+        let models_manager = ModelsManager::new(&queue);
 
         Renderer {
             instance,
@@ -210,16 +191,17 @@ impl Renderer {
             framebuffers,
             render_pass,
             pipeline,
-            dynamic_state,
             previous_frame_ends,
+            models_manager,
         }
     }
 
     pub fn window_size_dependent_setup(
         dims: [u32; 2],
+        device: Arc<Device>,
         swapchain: SWSSwapchain,
         render_pass: SWSRenderPass)
-    -> (SWSSwapchain, Vec<SWSFramebuffer>, Vec<Viewport>) {
+    -> (SWSSwapchain, Vec<SWSFramebuffer>) {
         let (new_swapchain, new_images) = match swapchain.recreate_with_dimensions(dims) {
             Ok(result) => result,
             Err(e) => panic!("Can't resize window to dims {:?}, error: {}", dims, e),
@@ -230,28 +212,32 @@ impl Renderer {
             Arc::new(
                 Framebuffer::start(render_pass.clone())
                 .add(image.clone()).expect("Failed to add attachment to framebuffer")
+                .add(AttachmentImage::transient(device.clone(), dims, Format::D16Unorm)
+                    .expect("Failed to create depth buffer")
+                    ).expect("Failed to add depth buffer to framebuffer")
                 .build().expect("Failed to create framebuffer")
             ) as Arc<dyn FramebufferAbstract + Send + Sync>
-        }).collect::<Vec<_>>(),
-        vec![Viewport {
-            origin: [0.0, 0.0],
-            dimensions: [dims[0] as f32, dims[1] as f32],
-            depth_range: 0.0 .. 1.0,
-        }])
+        }).collect::<Vec<_>>()
+        )
     }
 
     pub fn resize_window(&mut self, dims: [u32; 2]) {
-        let (swapchain, framebuffers, viewports) = Renderer::window_size_dependent_setup(
+        let (swapchain, framebuffers) = Renderer::window_size_dependent_setup(
             dims,
+            self.device.clone(),
             self.swapchain.clone(),
             self.render_pass.clone()
         );
         self.swapchain = swapchain;
         self.framebuffers = framebuffers;
-        self.dynamic_state.viewports = Some(viewports);
     }
 
-    pub fn draw_frame(&mut self) -> DrawResult {
+    pub fn draw_frame(
+        &mut self,
+        meshes: &InstanceBuffers,
+        view: cgmath::Matrix4<f32>,
+        proj: cgmath::Matrix4<f32>
+    ) -> DrawResult {
         // Wait for one of the previous frames to finish by dropping it
         self.previous_frame_ends.remove(0).cleanup_finished();
 
@@ -264,10 +250,27 @@ impl Renderer {
             return DrawResult::ResizeNeeded
         }
 
-        let command_buffer = AutoCommandBufferBuilder::primary_one_time_submit(self.device.clone(), self.queue.family())
+        let mut command_buffer = AutoCommandBufferBuilder::primary_one_time_submit(self.device.clone(), self.queue.family())
             .expect("Failed to create command buffer builder")
-            .begin_render_pass(self.framebuffers[image_num].clone(), false, vec![[0.5, 0.0, 0.0, 1.0].into()]).expect("Failed to begin render pass")
-            //.draw(self.pipeline.clone(), &self.dynamic_state, vertex_buffer.clone(), (), ()).unwrap()
+            .begin_render_pass(
+                self.framebuffers[image_num].clone(),
+                false,
+                vec![[0.0, 0.0, 0.0, 1.0].into(), 1.0.into()])
+                .expect("Failed to begin render pass");
+
+        for (model, buffer) in meshes.iter() {
+            let model_data = self.models_manager.id_to_model(model).expect("Attempt to draw nonexistent mesh");
+            command_buffer = command_buffer.draw_indexed(
+                self.pipeline.clone(),
+                &DynamicState::none(),
+                vec![model_data.vertices.clone(), buffer.clone()],
+                model_data.indices.clone(),
+                (), 
+                super::shaders::vs::ty::PushConstantData {view: view.into(), proj: proj.into()}
+            ).expect("Failed to create draw_indexed command");
+        }
+
+        let command_buffer = command_buffer
             .end_render_pass().expect("Failed to end render pass")
             .build().expect("Failed to build command buffer");
 

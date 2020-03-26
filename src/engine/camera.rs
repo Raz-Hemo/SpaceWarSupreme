@@ -1,8 +1,8 @@
 use cgmath::{Matrix4, Point3, Vector3, perspective, Deg};
 
 pub struct Camera {
-    pos: Point3<f32>,
-    look_at: Point3<f32>,
+    pub pos: Point3<f32>,
+    pub look_at: Point3<f32>,
     projection: Matrix4<f32>
 }
 

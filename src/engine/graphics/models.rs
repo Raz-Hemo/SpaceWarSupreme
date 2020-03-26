@@ -1,9 +1,10 @@
 use std::sync::Arc;
+use std::collections::HashMap;
 use vulkano::buffer::{ImmutableBuffer, BufferUsage};
 use vulkano::device::Queue;
 
 #[derive(Default, Debug, Clone)]
-struct Vertex {
+pub struct Vertex {
     position: [f32; 3],
     normal: [f32; 3],
     texcoord: [f32; 2],
@@ -11,8 +12,8 @@ struct Vertex {
 vulkano::impl_vertex!(Vertex, position, normal, texcoord);
 
 pub struct Model {
-    vertices: Arc<ImmutableBuffer<[Vertex]>>,
-    indices: Arc<ImmutableBuffer<[u32]>>,
+    pub vertices: Arc<ImmutableBuffer<[Vertex]>>,
+    pub indices: Arc<ImmutableBuffer<[u32]>>,
 }
 
 impl Model {
@@ -141,15 +142,9 @@ impl Model {
                     texcoord: [0.0, 0.0],
                 },
 
-
                 // -y
                 Vertex {
-                    position: [-1.0, -1.0, -1.0],
-                    normal: [0.0, -1.0, 0.0],
-                    texcoord: [0.0, 0.0],
-                },
-                Vertex {
-                    position: [1.0, -1.0, -1.0],
+                    position: [-1.0, -1.0, 1.0],
                     normal: [0.0, -1.0, 0.0],
                     texcoord: [0.0, 0.0],
                 },
@@ -159,43 +154,65 @@ impl Model {
                     texcoord: [0.0, 0.0],
                 },
                 Vertex {
-                    position: [-1.0, -1.0, 1.0],
+                    position: [1.0, -1.0, -1.0],
                     normal: [0.0, -1.0, 0.0],
                     texcoord: [0.0, 0.0],
                 },
-
+                Vertex {
+                    position: [-1.0, -1.0, -1.0],
+                    normal: [0.0, -1.0, 0.0],
+                    texcoord: [0.0, 0.0],
+                },
             ].iter().cloned(), BufferUsage::vertex_buffer(), queue.clone()).expect("Failed to create cube vertex buffer").0,
             indices: ImmutableBuffer::from_iter([
-                0,  1,  2,  0,  2,  3,  // front
-                4,  5,  6,  4,  6,  7,  // right
-                8,  9,  10, 8,  10, 11, // back
-                12, 13, 14, 12, 14, 15, // left
-                16, 17, 18, 16, 18, 19, // top
-                20, 21, 22, 20, 22, 23  // bottom
+                2,  1,  0,  3,  2,  0,  // front
+                6,  5,  4,  7,  6,  4,  // right
+                10,  9,  8, 11,  10, 8, // back
+                14, 13, 12, 15, 14, 12, // left
+                18, 17, 16, 19, 18, 16, // top
+                22, 21, 20, 23, 22, 20  // bottom
             ].iter().cloned(), BufferUsage::index_buffer(), queue.clone()).expect("Failed to create cube index buffer").0
         })
     }
 }
 
+pub type ModelID = u64;
 pub struct ModelsManager {
+    // The running counter
+    current_model_id: ModelID,
+    model_ids: HashMap<String, ModelID>,
+
     queue: Arc<Queue>,
-    models: std::collections::HashMap<String, Arc<Model>>,
-    default_model: Arc<Model>,
+    models: HashMap<ModelID, Arc<Model>>,
 }
 
 impl ModelsManager {
     pub fn new(queue: &Arc<Queue>) -> ModelsManager {
-        ModelsManager {
+        let mut result = ModelsManager {
+            current_model_id: 0,
             queue: queue.clone(),
-            models: std::collections::HashMap::new(),
-            default_model: Model::cube(queue),
-        }
+            model_ids: HashMap::new(),
+            models: HashMap::new(),
+        };
+
+        result.add_model("cube", Model::cube(queue));
+
+        result
     }
 
-    pub fn get(&mut self, name: &str) -> Arc<Model> {
+    // Insert a model into the manager and return its ID
+    pub fn add_model(&mut self, name: &str, m: Arc<Model>) -> ModelID {
+        self.model_ids.insert(String::from(name), self.current_model_id);
+        self.models.insert(self.current_model_id, m);
+        self.current_model_id += 1;
+
+        self.current_model_id - 1
+    }
+
+    pub fn get_id(&mut self, name: &str) -> ModelID {
         // If loaded, return it
-        match self.models.get(name) {
-            Some(model) => {return model.clone()},
+        match self.model_ids.get(name) {
+            Some(id) => return *id,
             None => ()
         }
 
@@ -204,10 +221,14 @@ impl ModelsManager {
             Some(data) => data,
             None => {
                 crate::log::warning(&format!("Model {} not found, loading cube instead", name));
-                self.default_model.clone()
+                return 0
             }
         };
-        self.models.insert(String::from(name), model.clone());
-        model
+
+        self.add_model(name, model.clone())
+    }
+
+    pub fn id_to_model(&self, id: &ModelID) -> Option<&Arc<Model>> {
+        self.models.get(id)
     }
 }
