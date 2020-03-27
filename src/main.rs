@@ -10,16 +10,12 @@ use winit::{
 
 mod log;
 mod gameplay;
+use gameplay::levels::{Level, spacewar};
 mod scripting;
 mod utils;
 mod consts;
 mod engine;
 mod ui;
-
-use gameplay::gamestate::{
-    GameStateManager,
-    main_menu::MainMenuGameState,
-};
 
 fn main()
 {
@@ -27,10 +23,7 @@ fn main()
 
     let eventloop = EventLoop::new();
     let mut engine = engine::Engine::new(&eventloop);
-    let mut game_state_manager = GameStateManager::new(
-        &mut engine,
-        Box::new(MainMenuGameState::new())
-    );
+    spacewar::SpaceWarLevel::new().load_level(&mut engine);
 
     eventloop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -43,8 +36,7 @@ fn main()
             Event::WindowEvent { event, .. } => engine.input.handle_window_event(&event),
             Event::DeviceEvent { event, .. } => engine.input.handle_device_event(&event),
             Event::MainEventsCleared => {
-                game_state_manager.tick(&mut engine);
-                if game_state_manager.should_exit {
+                if let engine::TickResult::Exit = engine.tick() {
                     *control_flow = ControlFlow::Exit;
                 }
 
