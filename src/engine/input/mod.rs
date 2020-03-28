@@ -17,7 +17,7 @@ pub struct InputInfo {
     mousey: f64,
 
     // Tracks window focus
-    is_focused: bool,
+    pub is_focused: bool,
 
     keyboard_events: Vec<KeyboardEvent>,
     mouse_events: Vec<MouseEvent>,
@@ -30,7 +30,7 @@ impl InputInfo {
             pressed_keys: HashSet::new(),
             mousex: 0.0,
             mousey:0.0,
-            is_focused: false,
+            is_focused: true,
             keyboard_events: Vec::new(),
             mouse_events: Vec::new(),
         }

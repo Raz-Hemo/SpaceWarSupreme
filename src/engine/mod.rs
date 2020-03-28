@@ -75,6 +75,10 @@ impl Engine {
     }
 
     pub fn draw_frame(&mut self) {
+        if !self.input.is_focused {
+            return;
+        }
+        
         self.system_static_mesh.run_now(&self.world);
 
         match self.renderer_draw_frame() {
