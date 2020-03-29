@@ -10,10 +10,16 @@ impl SpaceWarLevel {
 }
 impl super::Level for SpaceWarLevel {
     fn load_level(&mut self, engine: &mut crate::engine::Engine) {
-        engine.world.create_entity().with(components::StaticMeshComponent{
-            model: engine.renderer.models_manager.get_id("testmodel.obj"),
-            mesh_instance: MeshInstance::new()
-        }).build();
+        for i in 0 .. 10 {
+            engine.world.create_entity()
+            .with(components::StaticMeshComponent{
+                model: engine.renderer.models_manager.get_id("testmodel.obj"),
+                rel_transform: cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, 1.0 * i as f32, 0.0))
+            })
+            .with(components::MouseComponent::new())
+            .with(components::TransformComponent::new())
+            .build();
+        }
     }
 }
 

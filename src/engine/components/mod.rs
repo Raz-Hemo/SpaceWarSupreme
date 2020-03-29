@@ -1,5 +1,5 @@
-mod position;
-pub use position::PositionComponent;
+mod transform;
+pub use transform::TransformComponent;
 mod static_mesh;
 pub use static_mesh::StaticMeshComponent;
 mod mouse;

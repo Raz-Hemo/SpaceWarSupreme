@@ -22,6 +22,7 @@ pub struct Engine {
     pub world: World,
     pub audio: audio::AudioManager,
     system_static_mesh: systems::StaticMeshSystem,
+    system_scripting: systems::ScriptingSystem,
     last_tick: std::time::Instant
 }
 
@@ -35,19 +36,21 @@ impl Engine {
             audio: audio::AudioManager::new(),
             world: World::new(),
             system_static_mesh: systems::StaticMeshSystem::new(renderer.queue.clone()),
+            system_scripting: systems::ScriptingSystem::new(),
             renderer,
         };
 
         // ECS init
-        result.world.register::<components::PositionComponent>();
+        result.world.register::<components::TransformComponent>();
         result.world.register::<components::StaticMeshComponent>();
         result.world.register::<components::MouseComponent>();
+        result.world.register::<components::ScriptingComponent>();
         let mut cam = camera::Camera::new(
             result.cfg.resolution_x,
             result.cfg.resolution_y,
             65.0,
         );
-        cam.look_at = cgmath::Point3 { x: 0.0, y: 0.0, z: 0.0 };
+        cam.look_at = cgmath::Point3 { x: 0.0, y: 5.0, z: 0.0 };
         result.world.insert(cam);
 
         result
@@ -60,9 +63,9 @@ impl Engine {
 
         // Update camera
         {
-        let mut cam = self.world.write_resource::<camera::Camera>();
-        let t = dt.as_millis() as f32 * 0.002;
-            (*cam).pos = cgmath::Point3 { x: 5.0 * t.cos(), y: 0.0, z: 5.0 * t.sin() };
+            let mut cam = self.world.write_resource::<camera::Camera>();
+            let t = dt.as_millis() as f32 * 0.002;
+            (*cam).pos = cgmath::Point3 { x: 10.0 * t.cos(), y: 0.0, z: 10.0 * t.sin() };
         }
 
         TickResult::Continue
