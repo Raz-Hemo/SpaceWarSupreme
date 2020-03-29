@@ -13,8 +13,8 @@ pub struct InputInfo {
     pressed_keys: HashSet<VirtualKeyCode>,
 
     // Pixel position of the mouse relative to top left
-    mousex: f64,
-    mousey: f64,
+    pub mousex: f64,
+    pub mousey: f64,
 
     // Tracks window focus
     pub is_focused: bool,
