@@ -33,7 +33,12 @@ fn main()
                 event: WindowEvent::CloseRequested,
                 window_id,
             } if window_id == engine.renderer.get_window().id() => *control_flow = ControlFlow::Exit,
-            Event::WindowEvent { event, .. } => engine.input.handle_window_event(&event),
+            Event::WindowEvent { event, .. } => {
+                engine.input.handle_window_event(&event,
+                    engine.cfg.resolution_x,
+                    engine.cfg.resolution_y
+                );
+            },
             Event::DeviceEvent { event, .. } => engine.input.handle_device_event(&event),
             Event::MainEventsCleared => {
                 if let engine::TickResult::Exit = engine.tick() {

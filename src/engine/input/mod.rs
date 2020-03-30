@@ -29,7 +29,7 @@ impl InputInfo {
             modifiers: ModifiersState::empty(),
             pressed_keys: HashSet::new(),
             mousex: 0.0,
-            mousey:0.0,
+            mousey: 0.0,
             is_focused: true,
             keyboard_events: Vec::new(),
             mouse_events: Vec::new(),
@@ -39,7 +39,7 @@ impl InputInfo {
     pub fn handle_device_event(&mut self, e: &DeviceEvent) {
     }
 
-    pub fn handle_window_event(&mut self, e: &WindowEvent) {
+    pub fn handle_window_event(&mut self, e: &WindowEvent, resolution_x: u32, resolution_y: u32) {
         match e {
             WindowEvent::ModifiersChanged(new_mod) => self.modifiers = new_mod.clone(),
             WindowEvent::KeyboardInput { 
@@ -73,8 +73,21 @@ impl InputInfo {
                 position: pos,
                 ..
             } => {
-                self.mousex = pos.x;
-                self.mousey = pos.y;
+                if pos.x < 0.0 {
+                    self.mousex = 0.0;
+                } else if pos.x > resolution_x as f64 {
+                    self.mousex = (resolution_x - 1) as f64;
+                } else {
+                    self.mousex = pos.x;
+                }
+
+                if pos.y < 0.0 {
+                    self.mousey = 0.0;
+                } else if pos.y > resolution_y as f64 {
+                    self.mousey = (resolution_y - 1) as f64;
+                } else {
+                    self.mousey = pos.y;
+                }
             },
             WindowEvent::MouseInput {
                 button,
