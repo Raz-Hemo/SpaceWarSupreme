@@ -3,6 +3,18 @@
    cfg_attr(not(debug_assertions), 
    windows_subsystem = "windows"))]
 
+// External Dependencies
+extern crate specs;
+extern crate cgmath;
+extern crate itertools;
+extern crate vulkano;
+extern crate vulkano_shaders;
+extern crate rhai;
+extern crate rand;
+extern crate image;
+extern crate chrono;
+extern crate serde_json;
+
 use winit::{
     event_loop::{ControlFlow, EventLoop},
     event::{Event, WindowEvent},
@@ -10,7 +22,7 @@ use winit::{
 
 mod log;
 mod gameplay;
-use gameplay::levels::{Level, spacewar};
+use gameplay::levels::spacewar;
 mod scripting;
 mod utils;
 mod consts;
@@ -22,8 +34,10 @@ fn main()
     log::info("Starting Space War Supreme!");
 
     let eventloop = EventLoop::new();
-    let mut engine = engine::Engine::new(&eventloop);
-    spacewar::SpaceWarLevel::new().load_level(&mut engine);
+    let mut engine = engine::Engine::new(
+        &eventloop, 
+        Box::new(spacewar::SpaceWarLevel::new())
+    );
 
     eventloop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;

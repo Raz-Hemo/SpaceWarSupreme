@@ -1,7 +1,3 @@
-extern crate rhai;
-extern crate rand;
-extern crate image;
-
 use crate::log;
 use crate::utils;
 use crate::gameplay::types::{StarSystem, Star};

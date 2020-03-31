@@ -1,7 +1,4 @@
-extern crate specs;
-extern crate cgmath;
-use specs::{World, WorldExt, RunNow};
-
+use specs::{World, RunNow};
 mod config;
 mod graphics;
 mod input;

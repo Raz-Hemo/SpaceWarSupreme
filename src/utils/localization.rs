@@ -1,5 +1,3 @@
-extern crate serde_json;
-
 const LOCALIZATION_PATH: &str = "./resources/localization";
 const LOCALIZATION_EXTENSION: &str = "json";
 type LocalizationDict = std::collections::HashMap<String, String>;

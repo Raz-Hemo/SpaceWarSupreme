@@ -1,5 +1,3 @@
-extern crate itertools;
-
 use std::sync::Arc;
 use std::collections::HashMap;
 use vulkano::buffer::{ImmutableBuffer, BufferUsage};

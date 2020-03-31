@@ -1,6 +1,3 @@
-extern crate image;
-use std::collections::HashMap;
-
 pub type SWSResult<T> = Result<T, String>;
 
 mod localization;

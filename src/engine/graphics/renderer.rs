@@ -1,6 +1,3 @@
-extern crate vulkano;
-extern crate vulkano_shaders;
-
 use std::sync::Arc;
 use vulkano_win;
 use winit::{

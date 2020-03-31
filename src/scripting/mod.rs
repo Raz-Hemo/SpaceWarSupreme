@@ -1,5 +1,3 @@
-extern crate rhai;
-
 mod basic_funcs;
 use rhai::{Engine, RegisterFn};
 
