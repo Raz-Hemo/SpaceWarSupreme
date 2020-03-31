@@ -15,11 +15,6 @@ extern crate image;
 extern crate chrono;
 extern crate serde_json;
 
-use winit::{
-    event_loop::{ControlFlow, EventLoop},
-    event::{Event, WindowEvent},
-};
-
 mod log;
 mod gameplay;
 use gameplay::levels::spacewar;
@@ -28,6 +23,11 @@ mod utils;
 mod consts;
 mod engine;
 mod ui;
+
+use winit::{
+    event_loop::{ControlFlow, EventLoop},
+    event::{Event, WindowEvent},
+};
 
 fn main()
 {
@@ -48,7 +48,8 @@ fn main()
                 window_id,
             } if window_id == engine.renderer.get_window().id() => *control_flow = ControlFlow::Exit,
             Event::WindowEvent { event, .. } => {
-                engine.input.handle_window_event(&event,
+                engine.input.handle_window_event(
+                    &event,
                     engine.cfg.resolution_x,
                     engine.cfg.resolution_y
                 );

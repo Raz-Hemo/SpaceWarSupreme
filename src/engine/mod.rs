@@ -1,11 +1,12 @@
-use specs::{World, RunNow};
-mod config;
-mod graphics;
-mod input;
-mod audio;
+use specs::RunNow;
+pub mod config;
+pub mod input;
+pub mod audio;
+pub mod graphics;
 pub mod camera;
 pub mod components;
 pub mod systems;
+use crate::gameplay::levels::Level;
 
 pub enum TickResult {
     Continue,
@@ -13,83 +14,71 @@ pub enum TickResult {
 }
 
 pub struct Engine {
-    pub renderer: graphics::Renderer,
-    pub input: input::InputInfo,
-    pub cfg: config::Config,
-    pub world: World,
-    pub audio: audio::AudioManager,
+    level: Box<dyn Level>,
+    last_tick: std::time::Instant,
     system_static_mesh: systems::StaticMeshSystem,
     system_scripting: systems::ScriptingSystem,
-    last_tick: std::time::Instant
+    pub input: input::InputInfo,
+    pub cfg: config::Config,
+    pub audio: audio::AudioManager,
+    pub renderer: graphics::Renderer,
 }
 
 impl Engine {
-    pub fn new(eventloop: &winit::event_loop::EventLoop<()>) -> Engine {
+    pub fn new(eventloop: &winit::event_loop::EventLoop<()>, level: Box<dyn Level>) -> Engine {
         let renderer = graphics::Renderer::new(eventloop);
-        let mut result = Engine {
+        Engine {
+            level,
             last_tick: std::time::Instant::now(),
+            system_static_mesh: systems::StaticMeshSystem::new(renderer.queue.clone()),
+            system_scripting: systems::ScriptingSystem::new(),
             input: input::InputInfo::new(),
             cfg: config::Config::load(),
             audio: audio::AudioManager::new(),
-            world: World::new(),
-            system_static_mesh: systems::StaticMeshSystem::new(renderer.queue.clone()),
-            system_scripting: systems::ScriptingSystem::new(),
             renderer,
-        };
-
-        // ECS init
-        result.world.register::<components::TransformComponent>();
-        result.world.register::<components::StaticMeshComponent>();
-        result.world.register::<components::MouseComponent>();
-        result.world.register::<components::ScriptingComponent>();
-        let mut cam = camera::Camera::new(
-            result.cfg.resolution_x,
-            result.cfg.resolution_y,
-            65.0,
-        );
-        cam.look_at = cgmath::Point3 { x: 0.0, y: 5.0, z: 0.0 };
-        result.world.insert(cam);
-
-        result
+        }
     }
 
     pub fn tick(&mut self) -> TickResult {
         let dt = self.last_tick.elapsed();
         self.last_tick = std::time::Instant::now();
-        crate::log::info(&format!("{:?}", self.system_static_mesh.pickables.get(self.renderer.latest_pick_result as usize)));
 
-        // Update camera
-        {
-            let mut cam = self.world.write_resource::<camera::Camera>();
-            let t = dt.as_millis() as f32 * 0.002;
-            (*cam).pos = cgmath::Point3 { x: 10.0 * t.cos(), y: 0.0, z: 10.0 * t.sin() };
+        for space in self.level.iter_tickable() {
+            // TODO run all the systems
+            // TODO if script system requests exit, return TickResult::Exit
         }
 
         TickResult::Continue
     }
 
-    fn renderer_draw_frame(&mut self) -> graphics::DrawResult {
-        let cam = self.world.read_resource::<camera::Camera>();
-        self.renderer.draw_frame(
-            &self.system_static_mesh.next_instance_buffers,
-            (*cam).get_view_matrix(),
-            (*cam).get_projection_matrix(),
-            [self.input.mousex as i32,
-             self.input.mousey as i32],
-        )
+    fn renderer_draw_frame(&mut self, cam: &camera::Camera) -> graphics::DrawResult {
+        for space in self.level.iter_render() {
+            self.system_static_mesh.run_now(&space);
+        }
+        let (instance_buffers, pickables) = self.system_static_mesh.get_instances_and_flush();
+        let result = self.renderer.draw_frame(
+            &instance_buffers,
+            cam.get_view_matrix(),
+            [self.input.mousex as u32,
+             self.input.mousey as u32],
+        );
+
+        crate::log::info(&format!("{:?}", pickables.get(self.renderer.latest_pick_result as usize)));
+
+        result
     }
 
     pub fn draw_frame(&mut self) {
+        // Save CPU/GPU when game is minimized
         if !self.input.is_focused {
             return;
         }
-        
-        self.system_static_mesh.run_now(&self.world);
 
-        match self.renderer_draw_frame() {
+        let cam = self.level.get_camera();
+        match self.renderer_draw_frame(&cam) {
             graphics::DrawResult::ResizeNeeded => {
                 self.renderer.resize_window([self.cfg.resolution_x, self.cfg.resolution_y]);
-                self.renderer_draw_frame();
+                self.renderer_draw_frame(&cam);
             }
             _ => ()
         }

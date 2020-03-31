@@ -218,43 +218,49 @@ impl Model {
     }
 }
 
-pub type ModelID = u64;
-pub struct ModelsManager {
-    // The running counter
-    current_model_id: ModelID,
-    model_ids: HashMap<String, ModelID>,
-
-    queue: Arc<Queue>,
-    models: HashMap<ModelID, Arc<Model>>,
+#[derive(Clone)]
+pub struct ModelID {
+    pub name: String,
+    pub cached: Option<Arc<Model>>,
+}
+impl std::hash::Hash for ModelID {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state)
+    }
+}
+impl PartialEq for ModelID {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+impl Eq for ModelID {}
+impl ModelID {
+    pub fn from(name: &str) -> ModelID {
+        ModelID {
+            name: String::from(name),
+            cached: None,
+        }
+    }
 }
 
+pub struct ModelsManager {
+    queue: Arc<Queue>,
+    models: HashMap<String, Arc<Model>>,
+    default_model: Arc<Model>,
+}
 impl ModelsManager {
     pub fn new(queue: &Arc<Queue>) -> ModelsManager {
-        let mut result = ModelsManager {
-            current_model_id: 0,
+        ModelsManager {
             queue: queue.clone(),
-            model_ids: HashMap::new(),
             models: HashMap::new(),
-        };
-
-        result.add_model("cube", Model::cube(queue));
-
-        result
+            default_model: Model::cube(queue),
+        }
     }
 
-    // Insert a model into the manager and return its ID
-    pub fn add_model(&mut self, name: &str, m: Arc<Model>) -> ModelID {
-        self.model_ids.insert(String::from(name), self.current_model_id);
-        self.models.insert(self.current_model_id, m);
-        self.current_model_id += 1;
-
-        self.current_model_id - 1
-    }
-
-    pub fn get_id(&mut self, name: &str) -> ModelID {
+    pub fn get(&mut self, name: &str) -> Arc<Model> {
         // If loaded, return it
-        match self.model_ids.get(name) {
-            Some(id) => return *id,
+        match self.models.get(name) {
+            Some(m) => return m.clone(),
             None => ()
         }
 
@@ -265,14 +271,11 @@ impl ModelsManager {
                 crate::log::warning(&format!(
                     "Model {} not found ({}), loading cube instead", name, e
                 ));
-                return 0
+                return self.default_model.clone()
             }
         };
 
-        self.add_model(name, model.clone())
-    }
-
-    pub fn id_to_model(&self, id: &ModelID) -> Option<&Arc<Model>> {
-        self.models.get(id)
+        self.models.insert(String::from(name), model.clone());
+        model
     }
 }

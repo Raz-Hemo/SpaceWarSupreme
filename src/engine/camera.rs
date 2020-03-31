@@ -1,5 +1,6 @@
 use cgmath::{Matrix4, Point3, Vector3};
 
+#[derive(Clone, Copy)]
 pub struct Camera {
     pub pos: Point3<f32>,
     pub look_at: Point3<f32>,
