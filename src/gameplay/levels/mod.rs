@@ -1,14 +1,15 @@
 /// A level manages one or more spaces, which are independent ECS containers, and holds all
 /// gameplay logic between them.
 pub trait Level {
-    fn iter_render(&self) -> SpaceIterator;
-    fn iter_tickable(&self) -> SpaceIterator;
+    fn iter_render(&mut self) -> SpaceIterator;
+    fn iter_tickable(&mut self) -> SpaceIterator;
     fn get_camera(&self) -> crate::engine::camera::Camera;
 }
 
 /// Allows external callers to iterate spaces of a level.
-pub type SpaceIterator<'a> = Box<dyn Iterator<Item=&'a specs::World> + 'a>;
+pub type SpaceIterator<'a> = Box<dyn Iterator<Item=&'a mut specs::World> + 'a>;
 
+/// All the boilerplate of initializing a space
 fn create_space() -> specs::World {
     use crate::engine::components;
     use specs::{WorldExt};

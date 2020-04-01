@@ -3,7 +3,7 @@ use winit::event::{WindowEvent, DeviceEvent, KeyboardInput, ModifiersState, Elem
 use std::collections::{HashSet};
 mod keycode_to_str;
 mod event_resources;
-use event_resources::{KeyboardEvent, MouseEvent};
+pub use event_resources::{KeyboardEvent, MouseEvent, MouseClickType};
 
 pub struct InputInfo {
     // Ctrl, Alt and Shift state
@@ -34,6 +34,10 @@ impl InputInfo {
             keyboard_events: Vec::new(),
             mouse_events: Vec::new(),
         }
+    }
+
+    pub fn drain_mouse_events(&mut self) -> Vec<MouseEvent> {
+        std::mem::replace(&mut self.mouse_events, Vec::new())
     }
 
     pub fn handle_device_event(&mut self, e: &DeviceEvent) {

@@ -20,26 +20,27 @@ impl SpaceWarLevel {
         };
 
         result.create_menu();
-        result.camera.pos = cgmath::Point3::new(-5.0, 0.0, 0.0);
+        result.camera.pos = cgmath::Point3::new(0.0, 1.3, -2.6);
+        result.camera.look_at = cgmath::Point3::new(0.0, -1.0, 0.5);
 
         result
     }
 }
 impl super::Level for SpaceWarLevel {
-    fn iter_render(&self) -> super::SpaceIterator {
+    fn iter_render(&mut self) -> super::SpaceIterator {
         use std::iter::once;
         if self.is_in_menu {
-            Box::new(once(&self.main_menu_space).chain(once(&self.game_space)))
+            Box::new(once(&mut self.main_menu_space).chain(once(&mut self.game_space)))
         } else {
-            Box::new(once(&self.game_space))
+            Box::new(once(&mut self.game_space))
         }
     }
-    fn iter_tickable(&self) -> super::SpaceIterator {
+    fn iter_tickable(&mut self) -> super::SpaceIterator {
         use std::iter::once;
         if self.is_in_menu {
-            Box::new(once(&self.main_menu_space))
+            Box::new(once(&mut self.main_menu_space))
         } else {
-            Box::new(once(&self.game_space))
+            Box::new(once(&mut self.game_space))
         }
     }
     fn get_camera(&self) -> Camera {
@@ -48,16 +49,14 @@ impl super::Level for SpaceWarLevel {
 }
 impl SpaceWarLevel {
     fn create_menu(&mut self) {
-        for i in 0 .. 10 {
-            self.main_menu_space.create_entity()
-            .with(components::StaticMeshComponent{
-                model: ModelID::from("testmodel.obj"),
-                rel_transform: cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, 1.0 * i as f32, 0.0))
-            })
-            .with(components::MouseComponent::new())
-            .with(components::TransformComponent::new())
-            .build();
-        }
+        self.main_menu_space.create_entity()
+        .with(components::StaticMeshComponent{
+            model: ModelID::from("mainmenu.obj"),
+            rel_transform: cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, -1.0, 0.0))
+        })
+        .with(components::MouseComponent::new())
+        .with(components::TransformComponent::new())
+        .build();
     }
 
     fn get_credits() -> String {

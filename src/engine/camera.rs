@@ -4,6 +4,7 @@ use cgmath::{Matrix4, Point3, Vector3};
 pub struct Camera {
     pub pos: Point3<f32>,
     pub look_at: Point3<f32>,
+    pub up: Vector3<f32>,
 }
 
 impl Camera {
@@ -11,11 +12,12 @@ impl Camera {
         Camera {
             pos: Point3::new(0.0, 0.0, 0.0),
             look_at: Point3::new(0.0, 0.0, 1.0),
+            up: Vector3::new(0.0, -1.0, 0.0) // This -1 trades the Y axis inversion into an X one
         }
     }
 
     pub fn get_view_matrix(&self) -> Matrix4<f32> {
-        Matrix4::look_at(self.pos, self.look_at, Vector3::new(0.0, -1.0, 0.0))
+        Matrix4::look_at(self.pos, self.look_at, self.up)
     }
 
     // This is glitched by a slight offset. TBD when will actually need to use it

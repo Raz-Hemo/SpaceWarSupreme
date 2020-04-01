@@ -16,8 +16,10 @@ pub enum TickResult {
 pub struct Engine {
     level: Box<dyn Level>,
     last_tick: std::time::Instant,
+    picked_index: Option<(u32, specs::Entity)>,
     system_static_mesh: systems::StaticMeshSystem,
     system_scripting: systems::ScriptingSystem,
+    system_mouse: systems::MouseSystem,
     pub input: input::InputInfo,
     pub cfg: config::Config,
     pub audio: audio::AudioManager,
@@ -30,8 +32,10 @@ impl Engine {
         Engine {
             level,
             last_tick: std::time::Instant::now(),
+            picked_index: None,
             system_static_mesh: systems::StaticMeshSystem::new(renderer.queue.clone()),
             system_scripting: systems::ScriptingSystem::new(),
+            system_mouse: systems::MouseSystem::new(),
             input: input::InputInfo::new(),
             cfg: config::Config::load(),
             audio: audio::AudioManager::new(),
@@ -42,6 +46,13 @@ impl Engine {
     pub fn tick(&mut self) -> TickResult {
         let dt = self.last_tick.elapsed();
         self.last_tick = std::time::Instant::now();
+
+        // iter_render is guaranteed not to change since the last call to draw_frame
+        // so it is okay to use the world indices again
+        self.system_mouse.new_frame(self.picked_index, self.input.drain_mouse_events());
+        for space in self.level.iter_render() {
+            self.system_mouse.run_now(space);
+        }
 
         for space in self.level.iter_tickable() {
             // TODO run all the systems
@@ -63,7 +74,8 @@ impl Engine {
              self.input.mousey as u32],
         );
 
-        crate::log::info(&format!("{:?}", pickables.get(self.renderer.latest_pick_result as usize)));
+        self.picked_index = pickables.get(self.renderer.latest_pick_result as usize).copied();
+        crate::log::info(&format!("{:?}", self.picked_index));
 
         result
     }
