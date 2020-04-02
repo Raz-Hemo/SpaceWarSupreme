@@ -22,7 +22,6 @@ mod scripting;
 mod utils;
 mod consts;
 mod engine;
-mod ui;
 
 use winit::{
     event_loop::{ControlFlow, EventLoop},
