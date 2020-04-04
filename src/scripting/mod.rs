@@ -1,7 +1,7 @@
 mod basic_funcs;
 use rhai::{Engine, RegisterFn};
 
-pub fn new_engine() -> Engine {
+pub fn new_engine() -> Engine<'static> {
     let mut engine = Engine::new();
 
     engine.register_fn("error", basic_funcs::error);

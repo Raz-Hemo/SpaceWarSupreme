@@ -14,6 +14,7 @@ extern crate rand;
 extern crate image;
 extern crate chrono;
 extern crate serde_json;
+extern crate sanitize_filename;
 
 mod log;
 mod gameplay;

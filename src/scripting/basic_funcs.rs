@@ -1,15 +1,15 @@
 use crate::log;
 
-pub fn error(x: &str) -> () {
-    log::error(x);
+pub fn error(x: String) -> () {
+    log::error(&x);
 }
 
-pub fn warning(x: &str) -> () {
-    log::warning(x);
+pub fn warning(x: String) -> () {
+    log::warning(&x);
 }
 
-pub fn info(x: &str) -> () {
-    log::info(x);
+pub fn info(x: String) -> () {
+    log::info(&x);
 }
 
 pub fn rand_range<T>(min: T, max: T) -> T

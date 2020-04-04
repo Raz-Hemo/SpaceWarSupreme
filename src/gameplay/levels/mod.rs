@@ -3,6 +3,7 @@
 pub trait Level {
     fn iter_render(&mut self) -> SpaceIterator;
     fn iter_tickable(&mut self) -> SpaceIterator;
+    fn iter_all(&mut self) -> SpaceIterator;
     fn get_camera(&self) -> crate::engine::camera::Camera;
 }
 

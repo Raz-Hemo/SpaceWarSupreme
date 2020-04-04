@@ -1,6 +1,4 @@
 use specs::{WorldExt, Builder, World};
-use std::sync::Arc;
-use crate::engine::systems::MeshInstance;
 use crate::engine::graphics::ModelID;
 use crate::engine::{components, camera::Camera};
 
@@ -43,6 +41,10 @@ impl super::Level for SpaceWarLevel {
             Box::new(once(&mut self.game_space))
         }
     }
+    fn iter_all(&mut self) -> super::SpaceIterator {
+        use std::iter::once;
+        Box::new(once(&mut self.main_menu_space).chain(once(&mut self.game_space)))
+    }
     fn get_camera(&self) -> Camera {
         self.camera.clone()
     }
@@ -56,6 +58,7 @@ impl SpaceWarLevel {
         })
         .with(components::MouseComponent::new())
         .with(components::TransformComponent::new())
+        .with(components::ScriptingComponent::new("test.rhai"))
         .build();
     }
 

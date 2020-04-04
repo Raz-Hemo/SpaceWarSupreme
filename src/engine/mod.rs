@@ -20,6 +20,7 @@ pub struct Engine {
     system_static_mesh: systems::StaticMeshSystem,
     system_scripting: systems::ScriptingSystem,
     system_mouse: systems::MouseSystem,
+    system_script_preload: systems::ScriptingPreloadSystem,
     pub input: input::InputInfo,
     pub cfg: config::Config,
     pub audio: audio::AudioManager,
@@ -29,18 +30,28 @@ pub struct Engine {
 impl Engine {
     pub fn new(eventloop: &winit::event_loop::EventLoop<()>, level: Box<dyn Level>) -> Engine {
         let renderer = graphics::Renderer::new(eventloop);
-        Engine {
+        let mut result = Engine {
             level,
             last_tick: std::time::Instant::now(),
             picked_index: None,
             system_static_mesh: systems::StaticMeshSystem::new(renderer.queue.clone()),
             system_scripting: systems::ScriptingSystem::new(),
             system_mouse: systems::MouseSystem::new(),
+            system_script_preload: systems::ScriptingPreloadSystem::new(),
             input: input::InputInfo::new(),
             cfg: config::Config::load(),
             audio: audio::AudioManager::new(),
             renderer,
+        };
+
+        for space in result.level.iter_all() {
+            result.system_script_preload.run_now(space);
+            for s in result.system_script_preload.used_scripts.iter() {
+                result.system_scripting.add_script(&s);
+            }
         }
+
+        result
     }
 
     pub fn tick(&mut self) -> TickResult {
@@ -55,7 +66,7 @@ impl Engine {
         }
 
         for space in self.level.iter_tickable() {
-            // TODO run all the systems
+            self.system_scripting.run_now(space);
             // TODO if script system requests exit, return TickResult::Exit
         }
 
