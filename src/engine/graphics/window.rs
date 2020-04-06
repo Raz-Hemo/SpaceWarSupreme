@@ -1,19 +1,12 @@
-use std::sync::Arc;
-
-use vulkano::{
-    swapchain::Surface,
-    instance::Instance,
-};
-use vulkano_win::VkSurfaceBuild;
+use glium::glutin::{ContextBuilder, window::{WindowBuilder, Icon}};
 use winit::{
     dpi::LogicalSize,
-    window::{WindowBuilder, Window, Icon},
     event_loop::EventLoop,
 };
 
 use crate::utils;
 
-pub fn make_window(eventloop: &EventLoop<()>, instance: Arc<Instance>) -> Arc<Surface<Window>> {
+pub fn make_window(eventloop: &EventLoop<()>) -> glium::Display {
     // Load the icon
     use image::GenericImageView;
     let icon = match utils::load_image(crate::consts::ICON_PATH) {
@@ -26,16 +19,17 @@ pub fn make_window(eventloop: &EventLoop<()>, instance: Arc<Instance>) -> Arc<Su
             }
         },
         Err(_) => None
-    };
-
-    // Build the window
-    WindowBuilder::new()
+    };    
+    
+    glium::Display::new(
+        WindowBuilder::new()
         .with_title(crate::consts::WINDOW_NAME)
         .with_inner_size(LogicalSize::new(
             crate::consts::DEFAULT_RESOLUTION[0], 
             crate::consts::DEFAULT_RESOLUTION[1]))
         .with_window_icon(icon)
-        .with_resizable(false)
-        .build_vk_surface(&eventloop, instance)
-        .expect("Failed to create window")
+        .with_resizable(false),
+        ContextBuilder::new().with_depth_buffer(24),
+        &eventloop
+    ).expect("Failed to create window and OpenGL display")
 }

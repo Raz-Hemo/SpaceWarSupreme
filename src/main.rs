@@ -4,11 +4,13 @@
    windows_subsystem = "windows"))]
 
 // External Dependencies
+#[macro_use]
+extern crate glium;
+#[macro_use]
+extern crate rental;
 extern crate specs;
 extern crate cgmath;
 extern crate itertools;
-extern crate vulkano;
-extern crate vulkano_shaders;
 extern crate rhai;
 extern crate rand;
 extern crate image;
@@ -25,7 +27,7 @@ mod consts;
 mod engine;
 
 use winit::{
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::ControlFlow,
     event::{Event, WindowEvent},
 };
 
@@ -33,11 +35,13 @@ fn main()
 {
     log::info("Starting Space War Supreme!");
 
-    let eventloop = EventLoop::new();
+    let eventloop = glium::glutin::event_loop::EventLoop::new();
     let mut engine = engine::Engine::new(
         &eventloop, 
         Box::new(spacewar::SpaceWarLevel::new())
     );
+    // TODO expand this to include all monitor names+resolutions
+    println!("{:?}", engine.renderer.get_supported_resolutions());
 
     eventloop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -46,7 +50,7 @@ fn main()
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 window_id,
-            } if window_id == engine.renderer.get_window().id() => *control_flow = ControlFlow::Exit,
+            } if window_id == engine.renderer.get_display().gl_window().window().id() => *control_flow = ControlFlow::Exit,
             Event::WindowEvent { event, .. } => {
                 engine.input.handle_window_event(
                     &event,
@@ -60,7 +64,7 @@ fn main()
                     *control_flow = ControlFlow::Exit;
                 }
 
-                engine.renderer.get_window().request_redraw();
+                engine.renderer.get_display().gl_window().window().request_redraw();
             },
             Event::RedrawRequested(_window_id) => {
                 engine.draw_frame();

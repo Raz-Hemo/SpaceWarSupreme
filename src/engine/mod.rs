@@ -20,7 +20,7 @@ pub struct Engine {
     system_static_mesh: systems::StaticMeshSystem,
     system_scripting: systems::ScriptingSystem,
     system_mouse: systems::MouseSystem,
-    system_script_preload: systems::ScriptingPreloadSystem,
+    system_preload: systems::PreloadSystem,
     pub input: input::InputInfo,
     pub cfg: config::Config,
     pub audio: audio::AudioManager,
@@ -34,10 +34,10 @@ impl Engine {
             level,
             last_tick: std::time::Instant::now(),
             picked_index: None,
-            system_static_mesh: systems::StaticMeshSystem::new(renderer.queue.clone()),
+            system_static_mesh: systems::StaticMeshSystem::new(),
             system_scripting: systems::ScriptingSystem::new(),
             system_mouse: systems::MouseSystem::new(),
-            system_script_preload: systems::ScriptingPreloadSystem::new(),
+            system_preload: systems::PreloadSystem::new(),
             input: input::InputInfo::new(),
             cfg: config::Config::load(),
             audio: audio::AudioManager::new(),
@@ -45,9 +45,12 @@ impl Engine {
         };
 
         for space in result.level.iter_all() {
-            result.system_script_preload.run_now(space);
-            for s in result.system_script_preload.used_scripts.iter() {
+            result.system_preload.run_now(space);
+            for s in result.system_preload.used_scripts.iter() {
                 result.system_scripting.add_script(&s);
+            }
+            for m in result.system_preload.used_meshes.iter() {
+                result.renderer.load_model(&m);
             }
         }
 
@@ -73,24 +76,6 @@ impl Engine {
         TickResult::Continue
     }
 
-    fn renderer_draw_frame(&mut self, cam: &camera::Camera) -> graphics::DrawResult {
-        for space in self.level.iter_render() {
-            self.system_static_mesh.run_now(&space);
-        }
-        let (instance_buffers, pickables) = self.system_static_mesh.get_instances_and_flush();
-        let result = self.renderer.draw_frame(
-            &instance_buffers,
-            cam.get_view_matrix(),
-            [self.input.mousex as u32,
-             self.input.mousey as u32],
-        );
-
-        self.picked_index = pickables.get(self.renderer.latest_pick_result as usize).copied();
-        crate::log::info(&format!("{:?}", self.picked_index));
-
-        result
-    }
-
     pub fn draw_frame(&mut self) {
         // Save CPU/GPU when game is minimized
         if !self.input.is_focused {
@@ -98,12 +83,28 @@ impl Engine {
         }
 
         let cam = self.level.get_camera();
-        match self.renderer_draw_frame(&cam) {
-            graphics::DrawResult::ResizeNeeded => {
-                self.renderer.resize_window([self.cfg.resolution_x, self.cfg.resolution_y]);
-                self.renderer_draw_frame(&cam);
-            }
-            _ => ()
+        for space in self.level.iter_render() {
+            self.system_static_mesh.run_now(&space);
         }
+        let (instances, pickables) = self.system_static_mesh.get_instances_and_flush();
+        let result = self.renderer.draw_frame(
+            &instances,
+            cam.get_view_matrix(),
+            [self.input.mousex as u32,
+             self.input.mousey as u32],
+        );
+
+        self.picked_index = match self.renderer.latest_pick_result {
+            Some(i) => {
+                if pickables.len() >= i as usize {
+                    Some(*pickables.get((i - 1) as usize).unwrap())
+                } else {
+                    None
+                }
+            },
+            None => None
+        };
+
+        result
     }
 }

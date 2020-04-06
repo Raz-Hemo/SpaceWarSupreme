@@ -1,16 +1,13 @@
-use cgmath::SquareMatrix;
-use crate::engine::graphics::ModelID;
-
 pub struct StaticMeshComponent {
-    pub model: ModelID,
+    pub model: String,
     pub rel_transform: cgmath::Matrix4<f32>,
 }
 
 impl StaticMeshComponent {
-    pub fn new(model: ModelID) -> StaticMeshComponent {
+    pub fn new(model: &str, rel_transform: cgmath::Matrix4<f32>) -> StaticMeshComponent {
         StaticMeshComponent {
-            model,
-            rel_transform: cgmath::Matrix4::identity(),
+            model: String::from(model),
+            rel_transform,
         }
     }
 }

@@ -1,4 +1,4 @@
-fn on_lclick(x) {
+fn on_lclick() {
     info("hello from rhai!");
-    return x;
+    return 1337;
 }
