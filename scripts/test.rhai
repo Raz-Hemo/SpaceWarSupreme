@@ -1,4 +1,5 @@
-fn on_lclick() {
+fn on_lclick(game) {
     info("hello from rhai!");
-    return 1337;
+    game.exit_game();
+    return game;
 }

@@ -1,15 +1,10 @@
 use std::collections::{HashMap, HashSet};
 use specs::WriteStorage;
 use crate::engine::components::{ScriptingComponent, MouseComponent};
-use crate::scripting;
-
-pub enum GameEvent {
-    ChangeResolution(u32, u32),
-    ExitGame,
-}
+use crate::scripting::{new_engine, GameEvent, GameEventQueue};
 
 pub struct ScriptingSystem {
-    pub events: Vec<GameEvent>,
+    pub events: GameEventQueue,
     engine: rhai::Engine<'static>,
     loaded_scripts: HashMap<String, rhai::AST>,
     bad_scripts: HashSet<String>,
@@ -18,8 +13,8 @@ pub struct ScriptingSystem {
 impl ScriptingSystem {
     pub fn new() -> ScriptingSystem {
         ScriptingSystem {
-            events: Vec::new(),
-            engine: scripting::new_engine(),
+            events: GameEventQueue::new(),
+            engine: new_engine(),
             loaded_scripts: HashMap::new(),
             bad_scripts: HashSet::new(),
         }
@@ -48,6 +43,7 @@ impl<'a> specs::System<'a> for ScriptingSystem {
 
     fn run(&mut self, (mut scripts, mut mouses): Self::SystemData) {
         use specs::Join;
+        self.events.clear();
 
         // First call the mouse functions (on_click, etc.)
         for (script, mouse) in (&mut scripts, (&mut mouses).maybe()).join() {
@@ -70,11 +66,15 @@ impl<'a> specs::System<'a> for ScriptingSystem {
             if let Some(mouse_some) = mouse {
                 if mouse_some.is_clicked {
                     mouse_some.is_clicked = false;
-                    println!("{:?}", self.engine.call_fn0::<i64>(
-                        &mut script.scope, 
+                    match self.engine.call_fn1::<GameEventQueue, GameEventQueue>(
+                        &mut rhai::Scope::new(), 
                         ast,
-                        "on_lclick"
-                    ));
+                        "on_lclick",
+                        GameEventQueue::new(),
+                    ) {
+                        Ok(mut events) => self.events.merge(&mut events),
+                        Err(e) => crate::log::error(&format!("lclick failed: {:?}", e)),
+                    }
                 }
             }
         }

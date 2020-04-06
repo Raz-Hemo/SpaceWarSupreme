@@ -173,7 +173,7 @@ impl Renderer {
         };
 
         self.resolution_dependents.rent_mut(|(fb, fbos)| {
-            fb.clear_color_and_depth((0.5, 0.0, 0.0, 1.0), 1.0);
+            fb.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
         });
 
         for (model, insts) in meshes.iter() {

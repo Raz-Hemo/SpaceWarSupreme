@@ -12,7 +12,7 @@ impl Camera {
         Camera {
             pos: Point3::new(0.0, 0.0, 0.0),
             look_at: Point3::new(0.0, 0.0, 1.0),
-            up: Vector3::new(0.0, -1.0, 0.0) // This -1 trades the Y axis inversion into an X one
+            up: Vector3::new(0.0, 1.0, 0.0)
         }
     }
 

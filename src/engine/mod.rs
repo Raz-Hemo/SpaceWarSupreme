@@ -70,7 +70,14 @@ impl Engine {
 
         for space in self.level.iter_tickable() {
             self.system_scripting.run_now(space);
-            // TODO if script system requests exit, return TickResult::Exit
+
+            use crate::scripting::GameEvent;
+            for e in self.system_scripting.events.events.iter() {
+                match e {
+                    GameEvent::ExitGame => return TickResult::Exit,
+                    _ => ()
+                }
+            }
         }
 
         TickResult::Continue
