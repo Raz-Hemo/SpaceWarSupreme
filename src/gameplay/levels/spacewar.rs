@@ -1,11 +1,10 @@
 use specs::{WorldExt, Builder, World};
-use crate::engine::{components, camera::Camera};
+use crate::engine::components;
 
 pub struct SpaceWarLevel {
     main_menu_space: World,
     game_space: World,
     is_in_menu: bool,
-    camera: Camera,
 }
 impl SpaceWarLevel {
     pub fn new() -> SpaceWarLevel {
@@ -13,12 +12,9 @@ impl SpaceWarLevel {
             main_menu_space: super::create_space(),
             game_space: super::create_space(),
             is_in_menu: true,
-            camera: Camera::new(),
         };
 
         result.create_menu();
-        result.camera.pos = cgmath::Point3::new(0.0, 1.3, -2.6);
-        result.camera.look_at = cgmath::Point3::new(0.0, -1.0, 0.5);
 
         result
     }
@@ -44,9 +40,6 @@ impl super::Level for SpaceWarLevel {
         use std::iter::once;
         Box::new(once(&mut self.main_menu_space).chain(once(&mut self.game_space)))
     }
-    fn get_camera(&self) -> Camera {
-        self.camera.clone()
-    }
 }
 impl SpaceWarLevel {
     fn create_menu(&mut self) {
@@ -57,6 +50,11 @@ impl SpaceWarLevel {
         .with(components::MouseComponent::new())
         .with(components::TransformComponent::new())
         .with(components::ScriptingComponent::new("test.rhai"))
+        .build();
+
+        self.main_menu_space.create_entity()
+        .with(components::ScriptingComponent::new("mainmenu.rhai"))
+        .with(components::KeyboardComponent::new(vec![String::from("Escape")]))
         .build();
     }
 

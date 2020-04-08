@@ -24,6 +24,16 @@ pub fn error_msgbox(message: &str) {
     }
 }
 
+pub fn clamp<T: PartialOrd> (x: T, min: T, max: T) -> T {
+    if x < min {
+        min
+    } else if x > max {
+        max
+    } else {
+        x
+    }
+}
+
 pub fn read_file<P: AsRef<std::path::Path>>(path: P) -> SWSResult<String> {
     if let Ok(content) = std::fs::read_to_string(path.as_ref()) {
         Ok(content)

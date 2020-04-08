@@ -6,3 +6,5 @@ mod mouse;
 pub use mouse::MouseComponent;
 mod scripting;
 pub use scripting::ScriptingComponent;
+mod keyboard;
+pub use keyboard::KeyboardComponent;

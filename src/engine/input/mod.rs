@@ -40,6 +40,14 @@ impl InputInfo {
         std::mem::replace(&mut self.mouse_events, Vec::new())
     }
 
+    pub fn drain_kb_events(&mut self) -> Vec<KeyboardEvent> {
+        std::mem::replace(&mut self.keyboard_events, Vec::new())
+    }
+
+    pub fn kb_modifiers(&self) -> &ModifiersState {
+        &self.modifiers
+    }
+
     pub fn handle_device_event(&mut self, e: &DeviceEvent) {
     }
 

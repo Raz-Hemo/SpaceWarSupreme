@@ -4,7 +4,6 @@ pub trait Level {
     fn iter_render(&mut self) -> SpaceIterator;
     fn iter_tickable(&mut self) -> SpaceIterator;
     fn iter_all(&mut self) -> SpaceIterator;
-    fn get_camera(&self) -> crate::engine::camera::Camera;
 }
 
 /// Allows external callers to iterate spaces of a level.
@@ -19,6 +18,7 @@ fn create_space() -> specs::World {
     world.register::<components::TransformComponent>();
     world.register::<components::StaticMeshComponent>();
     world.register::<components::MouseComponent>();
+    world.register::<components::KeyboardComponent>();
     world.register::<components::ScriptingComponent>();
     world.insert(crate::engine::camera::Camera::new());
 
