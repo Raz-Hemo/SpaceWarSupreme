@@ -152,6 +152,12 @@ impl Renderer {
     pub fn resize_window(&mut self, dims: [u32; 2]) {
         self.get_display().gl_window().window().set_inner_size(winit::dpi::LogicalSize::new(dims[0], dims[1]));
         self.resolution = dims;
+        self.projection = cgmath::perspective(
+            cgmath::Deg(crate::consts::DEFAULT_VERTICAL_FOV_DEG),
+            (dims[0] as f32) / (dims[1] as f32),
+            crate::consts::DEFAULT_NEAR_CLIP,
+            crate::consts::DEFAULT_FAR_CLIP,
+        ).into();
         self.resolution_dependents = Renderer::build_resolution_dependents(&self.display, dims);
     }
 
@@ -205,8 +211,12 @@ impl Renderer {
             .first_layer()
             .into_image(None).unwrap()
             .raw_read_to_pixel_buffer(&glium::Rect {
-                left: mouse_coords[0] as u32,
-                bottom: self.resolution[1] - mouse_coords[1] - 1,
+                left: crate::utils::clamp(mouse_coords[0] as u32, 0, self.resolution[0] - 1),
+                bottom: crate::utils::clamp(
+                    self.resolution[1] as i32 - mouse_coords[1] as i32,
+                    0i32,
+                    self.resolution[1] as i32 - 1
+                ) as u32,
                 width: 1,
                 height: 1,
             }, &self.picking_pbo);
