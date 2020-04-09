@@ -1,23 +1,25 @@
-use cgmath::{Matrix4, Point3, Vector3};
+use nalgebra::{Matrix4, Point3, Vector3, geometry::UnitQuaternion};
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Camera {
-    pub pos: Point3<f32>,
-    pub look_at: Point3<f32>,
-    pub up: Vector3<f32>,
+    quat: UnitQuaternion<f32>,
+    pos: Point3<f32>,
 }
 
 impl Camera {
-    pub fn new() -> Camera {
+    pub fn new(pos: Point3<f32>, lookat: Point3<f32>, up: Vector3<f32>) -> Camera {
         Camera {
-            pos: Point3::new(0.0, 0.0, 0.0),
-            look_at: Point3::new(0.0, 0.0, 1.0),
-            up: Vector3::new(0.0, 1.0, 0.0)
+            quat: UnitQuaternion::face_towards(&(lookat - pos), &up),
+            pos,
         }
     }
 
     pub fn get_view_matrix(&self) -> Matrix4<f32> {
-        Matrix4::look_at(self.pos, self.look_at, self.up)
+        Matrix4::look_at_rh(
+            &self.pos,
+            &(self.pos + self.quat.transform_vector(&Vector3::z_axis())),
+            &self.quat.transform_vector(&Vector3::y_axis()),
+        )
     }
 
     // This is glitched by a slight offset. TBD when will actually need to use it
@@ -36,4 +38,17 @@ impl Camera {
     //        )
     //    )
     //}
+}
+
+impl crate::scripting::interpolate::Interpolate for Camera {
+    fn get(&self, other: &Camera, alpha: f32) -> Camera {
+        let result = Camera {
+            quat: self.quat.try_slerp(&other.quat, alpha, 0.0001).unwrap_or(
+                other.quat
+            ),
+            pos: self.pos + (other.pos - self.pos) * alpha,
+        };
+        //println!("{:?}-<>-{:?}=={:?}", self, other, result);
+        result
+    }
 }

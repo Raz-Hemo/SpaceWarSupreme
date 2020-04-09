@@ -89,14 +89,13 @@ impl Engine {
             return;
         }
 
-        let cam = self.level.get_camera();
         for space in self.level.iter_render() {
             self.system_static_mesh.run_now(&space);
         }
         let (instances, pickables) = self.system_static_mesh.get_instances_and_flush();
         let result = self.renderer.draw_frame(
             &instances,
-            cam.get_view_matrix(),
+            self.system_scripting.get_game_context().camera.get().get_view_matrix(),
             [self.input.mousex as u32,
              self.input.mousey as u32],
         );

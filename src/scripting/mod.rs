@@ -17,18 +17,26 @@ pub enum GameEvent {
 /// The entire game-only state that sits on top of the engine, not caring about
 /// the engine's implementation.
 #[derive(Debug, Clone)]
-pub struct GameEventQueue {
+pub struct GameContext {
     pub events: Vec<GameEvent>,
+    pub camera: interpolate::Interpolated<Camera>,
 }
-impl GameEventQueue {
-    pub fn new() -> GameEventQueue {
-        GameEventQueue {
+impl GameContext {
+    pub fn new() -> GameContext {
+        GameContext {
             events: Vec::new(),
+            camera: interpolate::Interpolated::new(
+                Camera::new(
+                    Point3::new(0.0, 0.0, 0.0),
+                    Point3::new(0.0, 0.0, 1.0),
+                    Vector3::new(0.0, 1.0, 0.0),
+                )
+            ),
         }
     }
 
-    pub fn merge(&mut self, other: &mut GameEventQueue) {
-        self.events.append(&mut other.events);
+    fn vec3_to_point3(v: Vector3<f32>) -> Point3<f32> {
+        Point3::new(v.x, v.y, v.z)
     }
 
     pub fn clear(&mut self) {
@@ -39,8 +47,23 @@ impl GameEventQueue {
         self.events.push(GameEvent::ChangeResolution(x, y));
     }
 
-    pub fn exit_game(&mut self) {
-        self.events.push(GameEvent::ExitGame);
+    /// Interpolates the camera over a given time
+    pub fn camera_smoothstep_lookat(
+    &mut self,
+    pos: Vector3<f32>,
+    lookat: Vector3<f32>,
+    up: Vector3<f32>,
+    duration: f64,
+    ) {
+        self.camera.set(
+            Camera::new(
+                GameContext::vec3_to_point3(pos),
+                GameContext::vec3_to_point3(lookat),
+                up
+            ),
+            interpolate::InterpType::Smoothstep,
+            duration as f32
+        );
     }
 }
 
@@ -53,9 +76,11 @@ pub fn new_engine() -> Engine<'static> {
     engine.register_fn("rand_range", basic_funcs::rand_range as fn(i64, i64) -> i64);
     engine.register_fn("rand_range", basic_funcs::rand_range as fn(f64, f64) -> f64);
 
-    engine.register_type::<GameEventQueue>();
-    engine.register_fn("change_resolution", GameEventQueue::change_resolution);
-    engine.register_fn("exit_game", GameEventQueue::exit_game);
+    engine.register_type::<GameContext>();
+    engine.register_fn("camera_smoothstep_lookat", GameContext::camera_smoothstep_lookat);
+
+    engine.register_type::<Vector3<f32>>();
+    engine.register_fn("vec3", basic_funcs::vec3);
 
     engine
 }
