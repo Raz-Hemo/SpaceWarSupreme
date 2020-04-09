@@ -39,12 +39,14 @@ impl GameContext {
         Point3::new(v.x, v.y, v.z)
     }
 
-    pub fn clear(&mut self) {
-        self.events.clear();
+    /// Signals the engine to change the resolution
+    pub fn change_resolution(&mut self, x: i64, y: i64) {
+        self.events.push(GameEvent::ChangeResolution(x as u32, y as u32));
     }
 
-    pub fn change_resolution(&mut self, x: u32, y: u32) {
-        self.events.push(GameEvent::ChangeResolution(x, y));
+    /// Signals the engine to exit
+    pub fn exit_game(&mut self) {
+        self.events.push(GameEvent::ExitGame);
     }
 
     /// Interpolates the camera over a given time
@@ -77,6 +79,8 @@ pub fn new_engine() -> Engine<'static> {
     engine.register_fn("rand_range", basic_funcs::rand_range as fn(f64, f64) -> f64);
 
     engine.register_type::<GameContext>();
+    engine.register_fn("change_resolution", GameContext::change_resolution);
+    engine.register_fn("exit_game", GameContext::exit_game);
     engine.register_fn("camera_smoothstep_lookat", GameContext::camera_smoothstep_lookat);
 
     engine.register_type::<Vector3<f32>>();

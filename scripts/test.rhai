@@ -1,5 +1,9 @@
-fn on_lclick(game) {
-    info("hello from rhai!");
-    game.exit_game();
-    return game;
+fn spawn() {
+    info("spawned menu");
+    return #{
+
+    };
+}
+fn on_lclick(self) {
+    return self;
 }

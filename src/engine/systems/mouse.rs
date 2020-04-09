@@ -36,11 +36,22 @@ impl<'a> specs::System<'a> for MouseSystem {
                 if let Some(c) = mouses.get_mut(p.1) {
                     c.is_hovered = true;
                     for e in self.input_events.drain(..) {
-                        if e.is_down && e.key == MouseClickType::Left {
-                            c.is_held = true;
+                        if e.is_down {
+                            if e.key == MouseClickType::Left {
+                                c.l_is_held = true;
+                            }
+                            if e.key == MouseClickType::Right {
+                                c.r_is_held = true;
+                            }
+                            
                         }
-                        if !e.is_down && e.key == MouseClickType::Left && c.is_held {
-                            c.is_clicked = true;
+                        else {
+                            if e.key == MouseClickType::Left && c.l_is_held {
+                                c.l_is_clicked = true;
+                            }
+                            if e.key == MouseClickType::Right && c.r_is_held {
+                                c.r_is_clicked = true;
+                            }
                         }
                     }
                 }
@@ -51,7 +62,7 @@ impl<'a> specs::System<'a> for MouseSystem {
             if self.current_pick != self.last_pick {
                 if let Some(c) = mouses.get_mut(p.1) {
                     c.is_hovered = false;
-                    c.is_held = false;
+                    c.l_is_held = false;
                 }
             }
         }

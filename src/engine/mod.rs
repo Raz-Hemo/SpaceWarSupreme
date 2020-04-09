@@ -1,4 +1,4 @@
-use specs::RunNow;
+use specs::{RunNow, WorldExt};
 pub mod config;
 pub mod input;
 pub mod audio;
@@ -20,6 +20,7 @@ pub struct Engine {
     system_static_mesh: systems::StaticMeshSystem,
     system_scripting: systems::ScriptingSystem,
     system_mouse: systems::MouseSystem,
+    system_keyboard: systems::KeyboardSystem,
     system_preload: systems::PreloadSystem,
     pub input: input::InputInfo,
     pub cfg: config::Config,
@@ -37,6 +38,7 @@ impl Engine {
             system_static_mesh: systems::StaticMeshSystem::new(),
             system_scripting: systems::ScriptingSystem::new(),
             system_mouse: systems::MouseSystem::new(),
+            system_keyboard: systems::KeyboardSystem::new(),
             system_preload: systems::PreloadSystem::new(),
             input: input::InputInfo::new(),
             cfg: config::Config::load(),
@@ -50,7 +52,9 @@ impl Engine {
                 result.system_scripting.add_script(&s);
             }
             for m in result.system_preload.used_meshes.iter() {
-                result.renderer.load_model(&m);
+                if let Err(e) = result.renderer.load_model(&m) {
+                    crate::log::error(&format!("Failed to load {}: {}", m, e));
+                }
             }
         }
 
@@ -61,21 +65,31 @@ impl Engine {
         let dt = self.last_tick.elapsed();
         self.last_tick = std::time::Instant::now();
 
-        // iter_render is guaranteed not to change since the last call to draw_frame
-        // so it is okay to use the world indices again
-        self.system_mouse.new_frame(self.picked_index, self.input.drain_mouse_events());
-        for space in self.level.iter_render() {
-            self.system_mouse.run_now(space);
-        }
-
+        self.system_keyboard.new_frame(self.input.drain_kb_events());
         for space in self.level.iter_tickable() {
+            {
+                let mut kbs = space.write_resource::<systems::KeyboardState>();
+                kbs.ctrl = self.input.kb_modifiers().ctrl();
+                kbs.shift = self.input.kb_modifiers().shift();
+                kbs.alt = self.input.kb_modifiers().alt();
+            }
+            self.system_keyboard.run_now(space);
             self.system_scripting.run_now(space);
 
             use crate::scripting::GameEvent;
-            for e in self.system_scripting.events.events.iter() {
+            for e in self.system_scripting.get_game_context().events.iter() {
                 match e {
-                    GameEvent::ExitGame => return TickResult::Exit,
-                    _ => ()
+                    GameEvent::ExitGame => {
+                        if let Err(e) = self.cfg.dump() {
+                            crate::log::error(&format!("{:?}", e));
+                        }
+                        return TickResult::Exit
+                    },
+                    GameEvent::ChangeResolution(x, y) => {
+                        self.renderer.resize_window([*x, *y]);
+                        self.cfg.resolution_x = *x;
+                        self.cfg.resolution_y = *y;
+                    },
                 }
             }
         }
@@ -110,6 +124,10 @@ impl Engine {
             },
             None => None
         };
+        self.system_mouse.new_frame(self.picked_index, self.input.drain_mouse_events());
+        for space in self.level.iter_render() {
+            self.system_mouse.run_now(space);
+        }
 
         result
     }
