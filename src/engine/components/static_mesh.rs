@@ -1,10 +1,10 @@
 pub struct StaticMeshComponent {
     pub model: String,
-    pub rel_transform: cgmath::Matrix4<f32>,
+    pub rel_transform: nalgebra::Matrix4<f32>,
 }
 
 impl StaticMeshComponent {
-    pub fn new(model: &str, rel_transform: cgmath::Matrix4<f32>) -> StaticMeshComponent {
+    pub fn new(model: &str, rel_transform: nalgebra::Matrix4<f32>) -> StaticMeshComponent {
         StaticMeshComponent {
             model: String::from(model),
             rel_transform,

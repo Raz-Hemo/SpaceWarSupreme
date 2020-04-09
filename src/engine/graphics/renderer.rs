@@ -40,7 +40,7 @@ pub struct Renderer {
     picking_pbo: PixelBuffer<u32>,
 }
 
-fn matrix_to_floats(m: cgmath::Matrix4<f32>) -> [[f32; 4]; 4] {
+fn matrix_to_floats(m: nalgebra::Matrix4<f32>) -> [[f32; 4]; 4] {
     m.into()
 }
 
@@ -102,9 +102,9 @@ impl Renderer {
             quad_vbuffer,
             picking_pbo,
             resolution,
-            projection: cgmath::perspective(
-                cgmath::Deg(crate::consts::DEFAULT_VERTICAL_FOV_DEG),
+            projection: nalgebra::Matrix4::new_perspective(
                 crate::consts::DEFAULT_ASPECT_RATIO,
+                crate::consts::DEFAULT_VERTICAL_FOV_DEG * std::f32::consts::PI / 180.0,
                 crate::consts::DEFAULT_NEAR_CLIP,
                 crate::consts::DEFAULT_FAR_CLIP,
             ).into()
@@ -152,9 +152,9 @@ impl Renderer {
     pub fn resize_window(&mut self, dims: [u32; 2]) {
         self.get_display().gl_window().window().set_inner_size(winit::dpi::LogicalSize::new(dims[0], dims[1]));
         self.resolution = dims;
-        self.projection = cgmath::perspective(
-            cgmath::Deg(crate::consts::DEFAULT_VERTICAL_FOV_DEG),
+        self.projection = nalgebra::Matrix4::new_perspective(
             (dims[0] as f32) / (dims[1] as f32),
+            crate::consts::DEFAULT_VERTICAL_FOV_DEG * std::f32::consts::PI / 180.0,
             crate::consts::DEFAULT_NEAR_CLIP,
             crate::consts::DEFAULT_FAR_CLIP,
         ).into();
@@ -164,7 +164,7 @@ impl Renderer {
     pub fn draw_frame(
         &mut self,
         meshes: &std::collections::HashMap<String, Vec<MeshInstance>>,
-        view: cgmath::Matrix4<f32>,
+        view: nalgebra::Matrix4<f32>,
         mouse_coords: [u32; 2] // for picking
     ) {
         // drawing a frame
@@ -174,7 +174,6 @@ impl Renderer {
                 write: true,
                 .. Default::default()
             },
-            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullingDisabled,
             .. Default::default()
         };
 

@@ -1,14 +1,12 @@
-use cgmath::SquareMatrix;
-
 #[derive(Debug)]
 pub struct TransformComponent {
-    pub transform: cgmath::Matrix4<f32>,
+    pub transform: nalgebra::Matrix4<f32>,
 }
 
 impl TransformComponent {
     pub fn new() -> TransformComponent {
         TransformComponent {
-            transform: cgmath::Matrix4::identity()
+            transform: nalgebra::Matrix4::identity()
         }
     }
 }

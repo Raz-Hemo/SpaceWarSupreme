@@ -1,11 +1,21 @@
-mod basic_funcs;
 use rhai::{Engine, RegisterFn};
+use crate::engine::camera::Camera;
+use nalgebra::{Point3, Vector3};
 
-#[derive(Debug, Clone)]
+mod basic_funcs;
+pub mod interpolate;
+
+#[derive(Debug, Clone, Copy)]
+/// Game events that must affect the engine, and not just the game.
+/// For example, adding an entity affects the game, but changing settings affects the engine.
+/// Therefore changing settings must be done through a GameEvent.
 pub enum GameEvent {
     ChangeResolution(u32, u32),
     ExitGame,
 }
+
+/// The entire game-only state that sits on top of the engine, not caring about
+/// the engine's implementation.
 #[derive(Debug, Clone)]
 pub struct GameEventQueue {
     pub events: Vec<GameEvent>,

@@ -46,7 +46,7 @@ impl SpaceWarLevel {
         self.main_menu_space.create_entity()
         .with(components::StaticMeshComponent::new(
             "mainmenu.obj", 
-            cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.0, -1.0, 0.0))))
+            nalgebra::Matrix4::new_translation(&nalgebra::Vector3::new(0.0, 0.0, 0.0))))
         .with(components::MouseComponent::new())
         .with(components::TransformComponent::new())
         .with(components::ScriptingComponent::new("test.rhai"))

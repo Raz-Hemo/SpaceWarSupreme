@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use cgmath::SquareMatrix;
 use specs::{ReadStorage, Entity, Entities};
 use crate::engine::components::{StaticMeshComponent, MouseComponent, TransformComponent};
 
@@ -14,7 +13,7 @@ impl Default for MeshInstance {
     fn default() -> Self {
         MeshInstance {
             // An identity matrix
-            world_matrix: cgmath::Matrix4::identity().into(),
+            world_matrix: nalgebra::Matrix4::identity().into(),
             entity: 65535,
         }
     }

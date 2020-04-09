@@ -9,7 +9,7 @@ extern crate glium;
 #[macro_use]
 extern crate rental;
 extern crate specs;
-extern crate cgmath;
+extern crate nalgebra;
 extern crate itertools;
 extern crate rhai;
 extern crate rand;
