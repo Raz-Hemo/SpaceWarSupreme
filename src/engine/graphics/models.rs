@@ -10,9 +10,28 @@ pub struct Model {
     pub indices: IndexBuffer<u32>,
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+struct CachedModel {
+    vertices: Vec<Vertex>,
+    indices: Vec<u32>,
+}
+
 impl Model {
-    pub fn from<P: AsRef<std::path::Path>>(filename: P, display: &Display) -> crate::utils::SWSResult<Model> {
-        let obj = tobj::load_obj(&std::path::Path::new("./resources/models/").join(filename));
+    fn from_cache<P: AsRef<std::path::Path>>(filename: P) -> crate::utils::SWSResult<CachedModel> {
+        match std::fs::File::open(filename) {
+            Ok(file) => {
+                let reader = std::io::BufReader::new(file);
+                match bincode::deserialize_from(reader) {
+                    Ok(data) => Ok(data),
+                    Err(e) => Err(format!("Failed loading cached model: {:?}", e))
+                }
+            },
+            Err(e) => Err(format!("Cached model does not exist: {:?}", e))
+        }
+    }
+
+    fn from_obj<P: AsRef<std::path::Path>>(filename: P) -> crate::utils::SWSResult<CachedModel> {
+        let obj = tobj::load_obj(filename.as_ref());
         if let Err(e) = obj {
             return Err(format!("Model does not exist: {:?}", e));
         }
@@ -44,18 +63,54 @@ impl Model {
             }
         }
 
-        let vertices = match VertexBuffer::immutable(display, &vertices) {
+        Ok(CachedModel {vertices, indices})
+    }
+
+    fn from_data(cached: CachedModel, display: &Display)
+    -> crate::utils::SWSResult<Model> {
+        let vertices = match VertexBuffer::immutable(display, &cached.vertices) {
             Ok(buf) => buf,
             Err(e) => return Err(format!("{:?}", e)),
         };
-        let indices = match IndexBuffer::immutable(display, glium::index::PrimitiveType::TrianglesList, &indices) {
+        let indices = match IndexBuffer::immutable(display, glium::index::PrimitiveType::TrianglesList, &cached.indices) {
             Ok(buf) => buf,
             Err(e) => return Err(format!("{:?}", e)),
         };
+
         Ok(Model {
             vertices,
             indices,
         })
+    }
+
+    pub fn from<P: AsRef<std::path::Path>>(filename: P, display: &Display) -> crate::utils::SWSResult<Model> {
+        let path = std::path::PathBuf::from("./resources/models/").join(&filename);
+        let model_data = match crate::utils::should_load_from_cache(&path) {
+            (true, Some(cache_path)) => Model::from_cache(cache_path),
+            (false, Some(cache_path)) => {
+                let m = Model::from_obj(path);
+                if let Err(e) = m {
+                    crate::log::error(&format!("{:?}", e));
+                    return Err(e)
+                }
+                let m = m.unwrap();
+                if let Ok(mut file) = std::fs::File::create(&cache_path) {
+                    match bincode::serialize_into(&mut file, &m) {
+                        Ok(_) => (),
+                        Err(e) => crate::log::error(&format!("Error caching {:?}: {:?}", filename.as_ref(), e)),
+                    }
+                }
+                Ok(m)
+            },
+            _ => {
+                Model::from_obj(path)
+            }
+        };
+
+        match model_data {
+            Ok(data) => Model::from_data(data, display),
+            Err(e) => Err(e),
+        }
     }
 
     pub fn cube(display: &Display) -> Model {
