@@ -15,7 +15,9 @@ extern crate rhai;
 extern crate rand;
 extern crate image;
 extern crate chrono;
+extern crate serde;
 extern crate serde_json;
+extern crate bincode;
 extern crate sanitize_filename;
 
 mod log;

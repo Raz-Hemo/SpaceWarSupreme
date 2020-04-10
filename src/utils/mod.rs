@@ -3,6 +3,7 @@ pub type SWSResult<T> = Result<T, String>;
 mod localization;
 pub use localization::Localization;
 
+
 pub fn error_msgbox(message: &str) {
     #[cfg(target_os = "windows")]
     {
@@ -90,4 +91,19 @@ pub fn get_files_with_extension_from<P>(dir: P, extensions: Vec<&str>) -> Vec<st
                       .filter(|p| extensions.iter().any(|&e| e == p.extension().unwrap().to_string_lossy().as_ref()))   // Path is a json?
                       .collect()
     }
+}
+
+/// Checks if the given file has an up to date optimized cache.
+/// The engine uses this form on files that take a while to load, like "model.obj"->"model.cache".
+pub fn should_load_from_cache<P: AsRef<std::path::Path>>(filename: P) -> (bool, Option<std::path::PathBuf>) {
+    let mut filename_cache = filename.as_ref().to_string_lossy().into_owned();
+    filename_cache.push_str(".cache");
+
+    if let Ok(Ok(time_file)) = std::fs::metadata(filename).map(|md| md.modified()) {
+        if let Ok(Ok(time_cache)) = std::fs::metadata(filename_cache.clone()).map(|md| md.modified()) {
+            return (time_file < time_cache, Some(std::path::PathBuf::from(filename_cache)))
+        }
+    }
+
+    (false, Some(std::path::PathBuf::from(filename_cache)))
 }
