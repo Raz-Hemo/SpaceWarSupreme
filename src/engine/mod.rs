@@ -16,7 +16,6 @@ pub enum TickResult {
 pub struct Engine {
     level: Box<dyn Level>,
     last_tick: std::time::Instant,
-    picked_index: Option<(u32, specs::Entity)>,
     system_static_mesh: systems::StaticMeshSystem,
     system_scripting: systems::ScriptingSystem,
     system_mouse: systems::MouseSystem,
@@ -34,7 +33,6 @@ impl Engine {
         let mut result = Engine {
             level,
             last_tick: std::time::Instant::now(),
-            picked_index: None,
             system_static_mesh: systems::StaticMeshSystem::new(),
             system_scripting: systems::ScriptingSystem::new(),
             system_mouse: systems::MouseSystem::new(),
@@ -114,7 +112,7 @@ impl Engine {
              self.input.mousey as u32],
         );
 
-        self.picked_index = match self.renderer.latest_pick_result {
+        let picked_index = match self.renderer.get_pick_result() {
             Some(i) => {
                 if pickables.len() >= i as usize {
                     Some(*pickables.get((i - 1) as usize).unwrap())
@@ -124,7 +122,7 @@ impl Engine {
             },
             None => None
         };
-        self.system_mouse.new_frame(self.picked_index, self.input.drain_mouse_events());
+        self.system_mouse.new_frame(picked_index, self.input.drain_mouse_events());
         for space in self.level.iter_render() {
             self.system_mouse.run_now(space);
         }

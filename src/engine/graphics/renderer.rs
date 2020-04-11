@@ -35,8 +35,8 @@ pub struct Renderer {
     instance_buffer: VertexBuffer<MeshInstance>,
     quad_vbuffer: VertexBuffer<Vertex2d>,
 
-    pub models_manager: ModelsManager,
-    pub latest_pick_result: Option<u32>,
+    models_manager: ModelsManager,
+    latest_pick_result: Option<u32>,
     picking_pbo: PixelBuffer<u32>,
 }
 
@@ -47,6 +47,10 @@ fn matrix_to_floats(m: nalgebra::Matrix4<f32>) -> [[f32; 4]; 4] {
 impl Renderer {
     pub fn get_display(&self) -> &Display {
         &self.display
+    }
+
+    pub fn get_pick_result(&self) -> Option<u32> {
+        self.latest_pick_result
     }
 
     pub fn new(eventloop: &EventLoop<()>) -> Renderer {
