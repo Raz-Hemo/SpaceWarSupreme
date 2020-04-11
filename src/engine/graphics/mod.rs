@@ -1,10 +1,14 @@
-pub mod window;
+mod window;
+pub use window::make_window;
 
-pub mod models;
+mod models;
 pub use models::ModelsManager;
 
-pub mod renderer;
+mod renderer;
 pub use renderer::Renderer;
+
+mod framebuilder;
+pub use framebuilder::FrameBuilder;
 
 mod shaders;
 mod vertex;

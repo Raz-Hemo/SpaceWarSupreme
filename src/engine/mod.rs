@@ -105,8 +105,12 @@ impl Engine {
             self.system_static_mesh.run_now(&space);
         }
         let (instances, pickables) = self.system_static_mesh.get_instances_and_flush();
+
+        let mut framebuilder = graphics::FrameBuilder::new();
+
+        framebuilder.with_meshes(instances);
         let result = self.renderer.draw_frame(
-            &instances,
+            &framebuilder,
             self.system_scripting.get_game_context().camera.get().get_view_matrix(),
             [self.input.mousex as u32,
              self.input.mousey as u32],

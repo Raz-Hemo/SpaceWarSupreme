@@ -167,7 +167,7 @@ impl Renderer {
 
     pub fn draw_frame(
         &mut self,
-        meshes: &std::collections::HashMap<String, Vec<MeshInstance>>,
+        framebuilder: &super::FrameBuilder,
         view: nalgebra::Matrix4<f32>,
         mouse_coords: [u32; 2] // for picking
     ) {
@@ -185,7 +185,7 @@ impl Renderer {
             fb.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
         });
 
-        for (model, insts) in meshes.iter() {
+        for (model, insts) in framebuilder.meshes.iter() {
             {
                 let mut map = self.instance_buffer.map_write();
                 for (index, inst) in insts.iter().enumerate() {
