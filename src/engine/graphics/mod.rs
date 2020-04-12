@@ -1,6 +1,9 @@
 mod window;
 pub use window::make_window;
 
+mod camera;
+pub use camera::Camera;
+
 mod models;
 pub use models::ModelsManager;
 
