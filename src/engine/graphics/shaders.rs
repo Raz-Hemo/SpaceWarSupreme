@@ -52,7 +52,8 @@ pub fn composition(display: &Display) -> Program {
             #version 450
             in vec2 position;
             in vec2 texcoord;
-            smooth out vec2 frag_texcoord;
+            out vec2 frag_texcoord;
+
             void main() {
                 frag_texcoord = texcoord;
                 gl_Position = vec4(position, 0.0, 1.0);
@@ -61,10 +62,46 @@ pub fn composition(display: &Display) -> Program {
         "
             #version 450
             uniform sampler2D color;
-            smooth in vec2 frag_texcoord;
+            in vec2 frag_texcoord;
             out vec4 frag_output;
+
             void main() {
                 frag_output = texture(color, frag_texcoord);
+            }
+        ",
+        None)
+        .unwrap()
+}
+
+pub fn static_skybox(display: &Display) -> Program {
+    Program::from_source(display,
+        "
+            #version 450
+            // constants
+            uniform mat4 proj;
+            uniform mat4 view;
+
+            in vec3 position;
+
+            out vec3 out_direction;
+
+            void main() {
+                out_direction = position;
+                gl_Position = proj * view * vec4(position, 1.0);
+            }
+        ",
+        "
+            #version 450
+            uniform samplerCube tex;
+            
+            in vec3 out_direction;
+
+            out vec4 color;
+            out uint pick;
+
+            void main() {
+                color = texture(tex, out_direction);
+                pick = 0;
             }
         ",
         None)

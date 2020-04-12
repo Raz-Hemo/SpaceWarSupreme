@@ -55,6 +55,7 @@ impl SpaceWarLevel {
         self.main_menu_space.create_entity()
         .with(components::ScriptingComponent::new("mainmenu.rhai"))
         .with(components::KeyboardComponent::new(vec![String::from("Escape")]))
+        .with(components::StaticSkyboxComponent::new("./resources/skybox/skybox.png"))
         .build();
     }
 

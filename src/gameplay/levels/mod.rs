@@ -20,6 +20,7 @@ fn create_space() -> specs::World {
     world.register::<components::MouseComponent>();
     world.register::<components::KeyboardComponent>();
     world.register::<components::ScriptingComponent>();
+    world.register::<components::StaticSkyboxComponent>();
     world.insert(crate::engine::systems::KeyboardState {ctrl: false, shift: false, alt: false});
 
     world

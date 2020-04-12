@@ -1,5 +1,7 @@
 mod static_mesh;
 pub use static_mesh::{StaticMeshSystem, MeshInstance};
+mod static_skybox;
+pub use static_skybox::StaticSkyboxSystem;
 mod scripting;
 pub use scripting::ScriptingSystem;
 mod mouse;

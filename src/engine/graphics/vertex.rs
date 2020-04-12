@@ -14,3 +14,9 @@ pub struct Vertex2d {
     pub texcoord: [f32; 2],
 }
 glium::implement_vertex!(Vertex2d, position, texcoord);
+
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct VertexSkybox {
+    pub position: [f32; 3],
+}
+glium::implement_vertex!(VertexSkybox, position);

@@ -2,6 +2,8 @@ mod transform;
 pub use transform::TransformComponent;
 mod static_mesh;
 pub use static_mesh::StaticMeshComponent;
+mod static_skybox;
+pub use static_skybox::StaticSkyboxComponent;
 mod mouse;
 pub use mouse::MouseComponent;
 mod scripting;

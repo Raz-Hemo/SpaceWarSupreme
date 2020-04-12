@@ -21,6 +21,7 @@ pub struct Engine {
     system_mouse: systems::MouseSystem,
     system_keyboard: systems::KeyboardSystem,
     system_preload: systems::PreloadSystem,
+    system_skybox: systems::StaticSkyboxSystem,
     pub input: input::InputInfo,
     pub cfg: config::Config,
     pub audio: audio::AudioManager,
@@ -38,6 +39,7 @@ impl Engine {
             system_mouse: systems::MouseSystem::new(),
             system_keyboard: systems::KeyboardSystem::new(),
             system_preload: systems::PreloadSystem::new(),
+            system_skybox: systems::StaticSkyboxSystem::new(),
             input: input::InputInfo::new(),
             cfg: config::Config::load(),
             audio: audio::AudioManager::new(),
@@ -52,6 +54,16 @@ impl Engine {
             for m in result.system_preload.used_meshes.iter() {
                 if let Err(e) = result.renderer.load_model(&m) {
                     crate::log::error(&format!("Failed to load {}: {}", m, e));
+                }
+            }
+            for t in result.system_preload.used_textures.iter() {
+                if let Err(e) = result.renderer.load_texture(&t) {
+                    crate::log::error(&format!("Failed to load {}: {}", t, e));
+                }
+            }
+            for cm in result.system_preload.used_cubemaps.iter() {
+                if let Err(e) = result.renderer.load_cubemap(&cm) {
+                    crate::log::error(&format!("Failed to load {}: {}", cm, e));
                 }
             }
         }
@@ -103,15 +115,17 @@ impl Engine {
 
         for space in self.level.iter_render() {
             self.system_static_mesh.run_now(&space);
+            self.system_skybox.run_now(&space);
         }
         let (instances, pickables) = self.system_static_mesh.get_instances_and_flush();
 
         let mut framebuilder = graphics::FrameBuilder::new();
-
         framebuilder.with_meshes(instances);
+        framebuilder.with_skybox(self.system_skybox.get_and_flush());
+
         let result = self.renderer.draw_frame(
             &framebuilder,
-            self.system_scripting.get_game_context().camera.get().get_view_matrix(),
+            &self.system_scripting.get_game_context().camera.get(),
             [self.input.mousex as u32,
              self.input.mousey as u32],
         );

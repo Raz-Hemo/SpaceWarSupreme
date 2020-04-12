@@ -3,7 +3,7 @@ use glium::{Display, Surface, VertexBuffer};
 use glium::program::Program;
 use glium::texture::{UnsignedTexture2d, Texture2d, pixel_buffer::PixelBuffer};
 use glium::framebuffer::{ColorAttachment, MultiOutputFrameBuffer, DepthRenderBuffer};
-use super::{models::ModelsManager, vertex::Vertex2d};
+use super::{ModelsManager, Model, TexturesManager, Texture, vertex::{Vertex2d, VertexSkybox}};
 use crate::engine::systems::MeshInstance;
 
 pub struct Fbos {
@@ -30,12 +30,15 @@ pub struct Renderer {
     resolution: [u32; 2],
     projection: [[f32; 4]; 4],
     program_staticmesh: Program,
+    program_skybox: Program,
     program_composition: Program,
     resolution_dependents: rentals::ResolutionDependents,
     instance_buffer: VertexBuffer<MeshInstance>,
     quad_vbuffer: VertexBuffer<Vertex2d>,
+    skybox_model: Model<VertexSkybox>,
 
     models_manager: ModelsManager,
+    textures_manager: TexturesManager,
     latest_pick_result: Option<u32>,
     picking_pbo: PixelBuffer<u32>,
 }
@@ -57,8 +60,10 @@ impl Renderer {
         let display = super::window::make_window(eventloop);
         let program_staticmesh = super::shaders::staticmesh(&display);
         let program_composition = super::shaders::composition(&display);
+        let program_skybox = super::shaders::static_skybox(&display);
         let resolution = crate::consts::DEFAULT_RESOLUTION;
         let models_manager = ModelsManager::new(&display);
+        let textures_manager = TexturesManager::new(&display);
 
         let picking_pbo: PixelBuffer<u32> = PixelBuffer::new_empty(&display, 1);
         let instance_buffer = VertexBuffer::empty_dynamic(
@@ -95,15 +100,20 @@ impl Renderer {
             resolution
         );
 
+        let skybox_model = Renderer::create_skybox_vbuffer(&display);
+
         Renderer {
             display,
             program_staticmesh,
             program_composition,
+            program_skybox,
             models_manager,
+            textures_manager,
             latest_pick_result: None,
             resolution_dependents,
             instance_buffer,
             quad_vbuffer,
+            skybox_model,
             picking_pbo,
             resolution,
             projection: nalgebra::Matrix4::new_perspective(
@@ -168,7 +178,7 @@ impl Renderer {
     pub fn draw_frame(
         &mut self,
         framebuilder: &super::FrameBuilder,
-        view: nalgebra::Matrix4<f32>,
+        camera: &dyn super::Camera,
         mouse_coords: [u32; 2] // for picking
     ) {
         // drawing a frame
@@ -178,12 +188,46 @@ impl Renderer {
                 write: true,
                 .. Default::default()
             },
+            backface_culling: glium::BackfaceCullingMode::CullClockwise,
             .. Default::default()
         };
 
         self.resolution_dependents.rent_mut(|(fb, fbos)| {
             fb.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
         });
+
+        // Skybox must be drawn first
+        if let Some(sb) = &framebuilder.skybox {
+            if let Texture::Cubemap(cm) = self.textures_manager.get(sb) {
+                let proj = self.projection;
+                let model = &self.skybox_model;
+                let program = &self.program_skybox;
+                let sb_params = glium::DrawParameters {
+                    depth: glium::Depth {
+                        test: glium::DepthTest::IfLess,
+                        write: false,
+                        .. Default::default()
+                    },
+                    backface_culling: glium::BackfaceCullingMode::CullClockwise,
+                    .. Default::default()
+                };
+                self.resolution_dependents.rent_mut(|(fb, _)| {
+                    fb.draw(
+                        &model.vertices,
+                        &model.indices,
+                        program,
+                        &uniform!{
+                            view: matrix_to_floats(camera.get_view_at_origin()),
+                            proj: proj,
+                            tex: cm.sampled().wrap_function(
+                                // Without this there are weird 1-pixel flashing seams
+                                glium::uniforms::SamplerWrapFunction::BorderClamp),
+                        },
+                        &sb_params
+                    ).unwrap();
+                });
+            }
+        }
 
         for (model, insts) in framebuilder.meshes.iter() {
             {
@@ -202,7 +246,7 @@ impl Renderer {
                     (&model_data.vertices, ibufslice.per_instance().unwrap()),
                     &model_data.indices,
                     program,
-                    &uniform!{view: matrix_to_floats(view), proj: proj},
+                    &uniform!{view: matrix_to_floats(camera.get_view()), proj: proj},
                     &params
                 ).unwrap();
             });
@@ -252,5 +296,13 @@ impl Renderer {
 
     pub fn load_model(&mut self, m: &str) -> crate::utils::SWSResult<()> {
         self.models_manager.try_load(&self.display, m)
+    }
+
+    pub fn load_texture(&mut self, t: &str) -> crate::utils::SWSResult<()> {
+        self.textures_manager.try_load(&self.display, t)
+    }
+    
+    pub fn load_cubemap(&mut self, cm: &str) -> crate::utils::SWSResult<()> {
+        self.textures_manager.try_load_cubemap(&self.display, cm)
     }
 }
