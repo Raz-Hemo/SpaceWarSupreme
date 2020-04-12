@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use specs::ReadStorage;
 use crate::engine::components::{
     ScriptingComponent,
@@ -7,18 +8,18 @@ use crate::engine::components::{
 
 
 pub struct PreloadSystem {
-    pub used_scripts: Vec<String>,
-    pub used_meshes: Vec<String>,
-    pub used_textures: Vec<String>,
-    pub used_cubemaps: Vec<String>,
+    pub used_scripts: HashSet<String>,
+    pub used_meshes: HashSet<String>,
+    pub used_textures: HashSet<String>,
+    pub used_cubemaps: HashSet<String>,
 }
 impl PreloadSystem {
     pub fn new() -> PreloadSystem {
         PreloadSystem {
-            used_scripts: Vec::new(),
-            used_meshes: Vec::new(),
-            used_textures: Vec::new(),
-            used_cubemaps: Vec::new(),
+            used_scripts: HashSet::new(),
+            used_meshes: HashSet::new(),
+            used_textures: HashSet::new(),
+            used_cubemaps: HashSet::new(),
         }
     }
 }
@@ -34,15 +35,15 @@ impl<'a> specs::System<'a> for PreloadSystem {
         use specs::Join;
 
         for script in scripts.join() {
-            self.used_scripts.push(script.path.clone());
+            self.used_scripts.insert(script.path.clone());
         }
 
         for mesh in meshes.join() {
-            self.used_meshes.push(mesh.model.clone());
+            self.used_meshes.insert(mesh.model.clone());
         }
 
         for skybox in skyboxes.join() {
-            self.used_cubemaps.push(skybox.skybox.clone());
+            self.used_cubemaps.insert(skybox.skybox.clone());
         }
     }
 }
