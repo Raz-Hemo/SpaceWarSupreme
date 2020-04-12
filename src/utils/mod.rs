@@ -107,3 +107,13 @@ pub fn should_load_from_cache<P: AsRef<std::path::Path>>(filename: P) -> (bool, 
 
     (false, Some(std::path::PathBuf::from(filename_cache)))
 }
+
+pub fn extend_filename<P: AsRef<std::path::Path>>(path: P, suffix: &str) -> std::path::PathBuf {
+    let filename = path.as_ref().file_stem().and_then(std::ffi::OsStr::to_str).unwrap_or("");
+    let extension = path.as_ref().extension().and_then(std::ffi::OsStr::to_str).unwrap_or("");
+    let mut extended = String::from(filename);
+    extended.push_str(suffix);
+    extended.push_str(".");
+    extended.push_str(extension);
+    std::path::PathBuf::from(path.as_ref().with_file_name(extended))
+}

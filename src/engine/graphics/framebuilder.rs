@@ -20,8 +20,8 @@ impl FrameBuilder {
         self
     }
 
-    pub fn with_skybox(mut self, skybox: String) -> Self {
-       self.skybox = Some(skybox);
+    pub fn with_skybox(&mut self, skybox: Option<String>) -> &mut Self {
+       self.skybox = skybox;
        self
     }
 }
