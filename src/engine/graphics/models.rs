@@ -5,19 +5,19 @@ use itertools::izip;
 
 use super::vertex::Vertex;
 
-pub struct Model {
-    pub vertices: VertexBuffer<Vertex>,
+pub struct Model<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> {
+    pub vertices: VertexBuffer<V>,
     pub indices: IndexBuffer<u32>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
-struct CachedModel {
-    vertices: Vec<Vertex>,
-    indices: Vec<u32>,
+pub struct CachedModel<V> {
+    pub vertices: Vec<V>,
+    pub indices: Vec<u32>,
 }
 
-impl Model {
-    fn from_cache<P: AsRef<std::path::Path>>(filename: P) -> crate::utils::SWSResult<CachedModel> {
+impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> Model<V> {
+    fn from_cache<P: AsRef<std::path::Path>>(filename: P) -> crate::utils::SWSResult<CachedModel<V>> {
         match std::fs::File::open(filename) {
             Ok(file) => {
                 let reader = std::io::BufReader::new(file);
@@ -30,7 +30,7 @@ impl Model {
         }
     }
 
-    fn from_obj<P: AsRef<std::path::Path>>(filename: P) -> crate::utils::SWSResult<CachedModel> {
+    fn from_obj<P: AsRef<std::path::Path>>(filename: P) -> crate::utils::SWSResult<CachedModel<Vertex>> {
         let obj = tobj::load_obj(filename.as_ref());
         if let Err(e) = obj {
             return Err(format!("Model does not exist: {:?}", e));
@@ -66,8 +66,8 @@ impl Model {
         Ok(CachedModel {vertices, indices})
     }
 
-    fn from_data(cached: CachedModel, display: &Display)
-    -> crate::utils::SWSResult<Model> {
+    pub fn from_data(cached: CachedModel<V>, display: &Display)
+    -> crate::utils::SWSResult<Model<V>> {
         let vertices = match VertexBuffer::immutable(display, &cached.vertices) {
             Ok(buf) => buf,
             Err(e) => return Err(format!("{:?}", e)),
@@ -83,12 +83,12 @@ impl Model {
         })
     }
 
-    pub fn from<P: AsRef<std::path::Path>>(filename: P, display: &Display) -> crate::utils::SWSResult<Model> {
+    pub fn from<P: AsRef<std::path::Path>>(filename: P, display: &Display) -> crate::utils::SWSResult<Model<Vertex>> {
         let path = std::path::PathBuf::from("./resources/models/").join(&filename);
         let model_data = match crate::utils::should_load_from_cache(&path) {
             (true, Some(cache_path)) => Model::from_cache(cache_path),
             (false, Some(cache_path)) => {
-                let m = Model::from_obj(path);
+                let m = Model::<Vertex>::from_obj(path);
                 if let Err(e) = m {
                     crate::log::error(&format!("{:?}", e));
                     return Err(e)
@@ -103,7 +103,7 @@ impl Model {
                 Ok(m)
             },
             _ => {
-                Model::from_obj(path)
+                Model::<Vertex>::from_obj(path)
             }
         };
 
@@ -113,12 +113,11 @@ impl Model {
         }
     }
 
-    pub fn cube(display: &Display) -> Model {
-        Model {
-            vertices: VertexBuffer::immutable(
-                display,
+    pub fn cube(display: &Display) -> Model<Vertex> {
+        Model::<Vertex>::from_data(CachedModel {
+            vertices: vec![
                 // +z
-                &[Vertex {
+                Vertex {
                     position: [1.0, 1.0, 1.0],
                     normal: [0.0, 0.0, 1.0],
                     texcoord: [0.0, 0.0],
@@ -251,35 +250,33 @@ impl Model {
                     position: [-1.0, -1.0, -1.0],
                     normal: [0.0, -1.0, 0.0],
                     texcoord: [0.0, 0.0],
-                }]).expect("Failed to create cube vertex buffer"),
-            indices: IndexBuffer::immutable(
-                display,
-                glium::index::PrimitiveType::TrianglesList, 
-                &[
-                    2,  1,  0,  3,  2,  0,  // front
-                    6,  5,  4,  7,  6,  4,  // right
-                    10,  9,  8, 11,  10, 8, // back
-                    14, 13, 12, 15, 14, 12, // left
-                    18, 17, 16, 19, 18, 16, // top
-                    22, 21, 20, 23, 22, 20  // bottom
-            ]).expect("Failed to create cube index buffer")
-        }
+                }
+            ],
+            indices: vec![
+                2,  1,  0,  3,  2,  0,  // front
+                6,  5,  4,  7,  6,  4,  // right
+                10,  9,  8, 11,  10, 8, // back
+                14, 13, 12, 15, 14, 12, // left
+                18, 17, 16, 19, 18, 16, // top
+                22, 21, 20, 23, 22, 20  // bottom
+            ]
+        }, display).expect("Failed to create cube")
     }
 }
 
 pub struct ModelsManager {
-    models: HashMap<String, Model>,
-    default_model: Model,
+    models: HashMap<String, Model<Vertex>>,
+    default_model: Model<Vertex>,
 }
 impl ModelsManager {
     pub fn new(display: &Display) -> ModelsManager {
         ModelsManager {
             models: HashMap::new(),
-            default_model: Model::cube(display),
+            default_model: Model::<Vertex>::cube(display),
         }
     }
 
-    pub fn get(&self, name: &str) -> &Model {
+    pub fn get(&self, name: &str) -> &Model<Vertex> {
         self.models.get(name).unwrap_or(&self.default_model)
     }
 
@@ -288,9 +285,9 @@ impl ModelsManager {
             return Ok(())
         }
 
-        match Model::from(name, display) {
+        match Model::<Vertex>::from(name, display) {
             Ok(m) => {self.models.insert(String::from(name), m); Ok(())},
-            Err(e) => Err(format!("{:?}", e))
+            Err(e) => Err(e)
         }
     }
 }
