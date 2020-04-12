@@ -18,11 +18,6 @@ impl Default for MeshInstance {
         }
     }
 }
-impl MeshInstance {
-    pub fn new() -> MeshInstance {
-        MeshInstance::default()
-    }
-}
 
 pub struct StaticMeshSystem {
     // Keeps track of the pickable entities and the worlds they belong to

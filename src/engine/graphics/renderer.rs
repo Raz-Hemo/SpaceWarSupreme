@@ -192,7 +192,7 @@ impl Renderer {
             .. Default::default()
         };
 
-        self.resolution_dependents.rent_mut(|(fb, fbos)| {
+        self.resolution_dependents.rent_mut(|(fb, _fbos)| {
             fb.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
         });
 
@@ -253,7 +253,7 @@ impl Renderer {
         }
 
         // Determine pick output
-        self.resolution_dependents.rent(|(fb, fbos)| {
+        self.resolution_dependents.rent(|(_fb, fbos)| {
             fbos.pick.main_level()
             .first_layer()
             .into_image(None).unwrap()
@@ -275,7 +275,7 @@ impl Renderer {
 
         let mut target = self.display.draw();
         target.clear_color_srgb_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
-        self.resolution_dependents.rent(|(fb, fbos)| {
+        self.resolution_dependents.rent(|(_fb, fbos)| {
             target.draw(
                 &self.quad_vbuffer,
                 glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
