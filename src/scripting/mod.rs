@@ -5,13 +5,14 @@ use nalgebra::{Point3, Vector3};
 mod basic_funcs;
 pub mod interpolate;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 /// Game events that must affect the engine, and not just the game.
 /// For example, adding an entity affects the game, but changing settings affects the engine.
 /// Therefore changing settings must be done through a GameEvent.
 pub enum GameEvent {
     ChangeResolution(u32, u32),
     ExitGame,
+    SetActiveSpace(String),
 }
 
 /// The entire game-only state that sits on top of the engine, not caring about
@@ -49,6 +50,11 @@ impl GameContext {
         self.events.push(GameEvent::ExitGame);
     }
 
+    /// Tells the engine which space consumes keyboard input.
+    pub fn set_active_space(&mut self, space: String) {
+        self.events.push(GameEvent::SetActiveSpace(space))
+    }
+
     /// Interpolates the camera over a given time
     pub fn camera_smoothstep_lookat(
     &mut self,
@@ -82,6 +88,7 @@ pub fn new_engine() -> Engine<'static> {
     engine.register_fn("change_resolution", GameContext::change_resolution);
     engine.register_fn("exit_game", GameContext::exit_game);
     engine.register_fn("camera_smoothstep_lookat", GameContext::camera_smoothstep_lookat);
+    engine.register_fn("set_active_space", GameContext::set_active_space);
 
     engine.register_type::<Vector3<f32>>();
     engine.register_fn("vec3", basic_funcs::vec3);

@@ -46,7 +46,7 @@ impl Engine {
             renderer,
         };
 
-        for space in result.level.iter_all() {
+        for space in result.level.iter_spaces() {
             result.system_preload.run_now(space);
             for s in result.system_preload.used_scripts.iter() {
                 result.system_scripting.add_script(&s);
@@ -75,31 +75,40 @@ impl Engine {
         let dt = self.last_tick.elapsed();
         self.last_tick = std::time::Instant::now();
 
-        self.system_keyboard.new_frame(self.input.drain_kb_events());
-        for space in self.level.iter_tickable() {
-            {
-                let mut kbs = space.write_resource::<systems::KeyboardState>();
-                kbs.ctrl = self.input.kb_modifiers().ctrl();
-                kbs.shift = self.input.kb_modifiers().shift();
-                kbs.alt = self.input.kb_modifiers().alt();
-            }
-            self.system_keyboard.run_now(space);
-            self.system_scripting.run_now(space);
+        // Keyboard input
+        {
+            self.system_keyboard.new_frame(self.input.drain_kb_events());
+            let space = self.level.get_active_space();
 
+            let mut kbs = space.write_resource::<systems::KeyboardState>();
+            kbs.ctrl = self.input.kb_modifiers().ctrl();
+            kbs.shift = self.input.kb_modifiers().shift();
+            kbs.alt = self.input.kb_modifiers().alt();
+            
+            self.system_keyboard.run_now(space);
+        }
+        
+        
+        for space in self.level.iter_spaces() {
+            self.system_scripting.run_now(space);
+        }
+
+        for e in self.system_scripting.get_game_context().events.iter() {
             use crate::scripting::GameEvent;
-            for e in self.system_scripting.get_game_context().events.iter() {
-                match e {
-                    GameEvent::ExitGame => {
-                        if let Err(e) = self.cfg.dump() {
-                            crate::log::error(&format!("{:?}", e));
-                        }
-                        return TickResult::Exit
-                    },
-                    GameEvent::ChangeResolution(x, y) => {
-                        self.renderer.resize_window([*x, *y]);
-                        self.cfg.resolution_x = *x;
-                        self.cfg.resolution_y = *y;
-                    },
+            match e {
+                GameEvent::ExitGame => {
+                    if let Err(e) = self.cfg.dump() {
+                        crate::log::error(&format!("{:?}", e));
+                    }
+                    return TickResult::Exit
+                },
+                GameEvent::ChangeResolution(x, y) => {
+                    self.renderer.resize_window([*x, *y]);
+                    self.cfg.resolution_x = *x;
+                    self.cfg.resolution_y = *y;
+                },
+                GameEvent::SetActiveSpace(space) => {
+                    self.level.set_active_space(space);
                 }
             }
         }
@@ -113,7 +122,7 @@ impl Engine {
             return;
         }
 
-        for space in self.level.iter_render() {
+        for space in self.level.iter_spaces() {
             self.system_static_mesh.run_now(&space);
             self.system_skybox.run_now(&space);
         }
@@ -141,7 +150,7 @@ impl Engine {
             None => None
         };
         self.system_mouse.new_frame(picked_index, self.input.drain_mouse_events());
-        for space in self.level.iter_render() {
+        for space in self.level.iter_spaces() {
             self.system_mouse.run_now(space);
         }
 
