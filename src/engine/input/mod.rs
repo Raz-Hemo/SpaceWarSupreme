@@ -73,9 +73,11 @@ impl InputInfo {
                     return ();
                 }
 
-                // Add to pressed list if needed
+                // Maintain pressed list
                 if *state == ElementState::Pressed {
                     self.pressed_keys.insert(keycode.clone());
+                } else {
+                    self.pressed_keys.remove(keycode);
                 }
 
                 self.keyboard_events.push(KeyboardEvent {key: input_str, is_down: *state == ElementState::Pressed});
