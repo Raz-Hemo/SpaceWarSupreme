@@ -37,7 +37,7 @@ void main() {
     layout(location = 0) out vec4 color;
     layout(location = 1) out uint pick;
     void main() {
-        float lighting = clamp(dot(outnorm, -normalize(vec3(-1.0, 1.0, 0.0))), 0.0, 1.0);
+        float lighting = clamp(dot(outnorm, -normalize(-vec3(-1.0, 1.0, 0.0))), 0.0, 1.0);
         color = vec4(0.2 + 0.8 * vec3(lighting), 1.0);
         pick = entity;
     }

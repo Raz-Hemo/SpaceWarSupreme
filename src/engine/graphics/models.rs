@@ -253,11 +253,11 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
                 }
             ],
             indices: vec![
-                2,  1,  0,  3,  2,  0,  // front
-                6,  5,  4,  7,  6,  4,  // right
-                10,  9,  8, 11,  10, 8, // back
-                14, 13, 12, 15, 14, 12, // left
-                18, 17, 16, 19, 18, 16, // top
+                0,  1,  2,  0,  2,  3,  // front
+                4,  5,  6,  4,  6,  7,  // right
+                8,  9,  10,  8, 10, 11,  // back
+                12, 13, 14, 12, 14, 15, // left
+                16, 17, 18, 16, 18, 19, // top
                 22, 21, 20, 23, 22, 20  // bottom
             ]
         }, display).expect("Failed to create cube")
