@@ -231,6 +231,9 @@ impl Renderer {
 
         for (model, insts) in framebuilder.meshes.iter() {
             {
+                if insts.len() > crate::consts::DEFAULT_INSTANCE_BUFFER_SIZE {
+                    panic!("Too many instances of one model!")
+                }
                 let mut map = self.instance_buffer.map_write();
                 for (index, inst) in insts.iter().enumerate() {
                     map.set(index, *inst);

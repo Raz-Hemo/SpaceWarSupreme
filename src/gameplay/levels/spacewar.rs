@@ -20,6 +20,7 @@ impl SpaceWarLevel {
         };
 
         result.create_menu();
+        result.load_game("");
 
         result
     }
@@ -27,9 +28,23 @@ impl SpaceWarLevel {
     fn load_game(&mut self, name: &str) {
         self.galaxy_map_space = super::create_space();
 
-        // for star in crate::gameplay::mapgen::execute_map_generator(mapgen_path: &str, stargen_path: &str, namegen_path: &str){
+        self.galaxy_map_space.create_entity()
+        .with(components::ScriptingComponent::new("galaxymap.rhai"))
+        .with(components::KeyboardComponent::new(vec![String::from("Escape")]))
+        .build();
 
-        // }
+        for star in crate::gameplay::mapgen::apply_mask(crate::gameplay::mapgen::poisson_distribution(64), "./resources/spiral_mask.png").unwrap() {
+            self.galaxy_map_space.create_entity()
+            .with(components::StaticMeshComponent::new(
+                "sphere.obj", 
+                nalgebra::Matrix4::new_scaling(0.01)))
+            .with(components::TransformComponent::from(
+                nalgebra::Matrix4::new_translation(
+                    &nalgebra::Vector3::new(star.0 as f32, -5.0, star.1 as f32)
+                )
+            ))
+            .build();
+        }
     }
 }
 impl super::Level for SpaceWarLevel {
@@ -69,11 +84,6 @@ impl SpaceWarLevel {
         .with(components::ScriptingComponent::new("mainmenu.rhai"))
         .with(components::KeyboardComponent::new(vec![String::from("Escape")]))
         .with(components::StaticSkyboxComponent::new("./resources/skybox/skybox.png"))
-        .build();
-
-        self.galaxy_map_space.create_entity()
-        .with(components::ScriptingComponent::new("galaxymap.rhai"))
-        .with(components::KeyboardComponent::new(vec![String::from("Escape")]))
         .build();
     }
 

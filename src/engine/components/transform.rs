@@ -9,6 +9,11 @@ impl TransformComponent {
             transform: nalgebra::Matrix4::identity()
         }
     }
+    pub fn from(transform: nalgebra::Matrix4<f32>) -> TransformComponent {
+        TransformComponent {
+            transform
+        }
+    }
 }
 
 impl specs::Component for TransformComponent {
