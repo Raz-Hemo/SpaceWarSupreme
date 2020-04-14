@@ -36,7 +36,7 @@ impl SpaceWarLevel {
         for star in crate::gameplay::mapgen::apply_mask(crate::gameplay::mapgen::poisson_distribution(64), "./resources/spiral_mask.png").unwrap() {
             self.galaxy_map_space.create_entity()
             .with(components::StaticMeshComponent::new(
-                "sphere.obj", 
+                "sphere.gltf", 
                 nalgebra::Matrix4::new_scaling(0.01)))
             .with(components::TransformComponent::from(
                 nalgebra::Matrix4::new_translation(
@@ -73,8 +73,8 @@ impl SpaceWarLevel {
     fn create_menu(&mut self) {
         self.main_menu_space.create_entity()
         .with(components::StaticMeshComponent::new(
-            "mainmenu.obj", 
-            nalgebra::Matrix4::new_scaling(1.5)))
+            "mainmenu.gltf", 
+            nalgebra::Matrix4::new_scaling(1.2)))
         .with(components::MouseComponent::new())
         .with(components::TransformComponent::new())
         .with(components::ScriptingComponent::new("test.rhai"))

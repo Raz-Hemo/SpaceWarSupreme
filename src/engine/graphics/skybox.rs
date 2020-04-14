@@ -1,11 +1,11 @@
 use glium::Display;
 use super::vertex::VertexSkybox;
-use super::models::{Model, CachedModel};
+use super::models::{Model, CachedModel, CachedPrimitive};
 
 impl super::Renderer {
     pub fn create_skybox_vbuffer(display: &Display) -> Model<VertexSkybox> {
         Model::from_data(
-        CachedModel {
+        CachedModel { primitives: vec![CachedPrimitive {
             vertices: vec![
                 // +z
                 VertexSkybox {
@@ -102,7 +102,7 @@ impl super::Renderer {
                 18, 17, 16, 19, 18, 16, // top
                 20, 21, 22, 20, 22, 23  // bottom
             ]
-        },
+        }]},
         display).expect("Failed to create skybox vbuffer")
     }
 }
