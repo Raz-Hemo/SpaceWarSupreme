@@ -6,6 +6,11 @@ pub mod graphics;
 pub mod camera;
 pub mod components;
 pub mod systems;
+pub mod log;
+pub mod utils;
+pub mod consts;
+pub mod localization;
+pub mod prelude;
 use crate::gameplay::levels::Level;
 
 pub enum TickResult {
@@ -53,17 +58,17 @@ impl Engine {
             }
             for m in result.system_preload.used_meshes.iter() {
                 if let Err(e) = result.renderer.load_model(&m) {
-                    crate::log::err(&e);
+                    log::err(&e);
                 }
             }
             for t in result.system_preload.used_textures.iter() {
                 if let Err(e) = result.renderer.load_texture(&t) {
-                    crate::log::err(&e);
+                    log::err(&e);
                 }
             }
             for cm in result.system_preload.used_cubemaps.iter() {
                 if let Err(e) = result.renderer.load_cubemap(&cm) {
-                    crate::log::err(&e);
+                    log::err(&e);
                 }
             }
         }
@@ -98,7 +103,7 @@ impl Engine {
             match e {
                 GameEvent::ExitGame => {
                     if let Err(e) = self.cfg.dump() {
-                        crate::log::error(&format!("{:?}", e));
+                        log::error(&format!("{:?}", e));
                     }
                     return TickResult::Exit
                 },
@@ -119,6 +124,7 @@ impl Engine {
     pub fn draw_frame(&mut self) {
         // Save CPU/GPU when game is minimized
         if !self.input.is_focused {
+            std::thread::sleep(std::time::Duration::from_millis(10));
             return;
         }
 

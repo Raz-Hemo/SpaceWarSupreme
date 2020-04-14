@@ -1,7 +1,3 @@
-mod localization;
-pub use localization::Localization;
-
-
 pub fn error_msgbox(message: &str) {
     #[cfg(target_os = "windows")]
     {
@@ -50,8 +46,8 @@ pub fn load_image<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<image::D
         format!("Failed opening image {}", path.as_ref().to_string_lossy()))
 }
 
-pub fn get_game_dependencies() -> Vec<String> {
-    let cargo_toml = include_str!("../../Cargo.toml");
+pub fn get_engine_dependencies() -> Vec<String> {
+    let cargo_toml = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "\\Cargo.toml"));
     let mut result = Vec::<String>::new();
     let mut dependencies_found = false;
 

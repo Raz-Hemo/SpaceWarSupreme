@@ -1,3 +1,4 @@
+use crate::engine::prelude::*;
 use std::sync::mpsc::channel;
 
 pub enum SoundEvent {
@@ -26,7 +27,7 @@ impl AudioManager {
             audio_worker_thread(receiver);
         });
         if thread.is_err() {
-            crate::log::error(&format!("Failed to create audio thread: {:?}", thread));
+            log::error(&format!("Failed to create audio thread: {:?}", thread));
         }
 
         AudioManager {
@@ -41,22 +42,22 @@ impl AudioManager {
             if let Err(e) = self.sender.send(
                 SoundEvent::Play(self.assets.clone(), String::from(id))
             ) {
-                crate::log::warning(&format!("Failed to send sound to worker thread: {}", e));
+                log::warning(&format!("Failed to send sound to worker thread: {}", e));
             }
         } else {
-            crate::log::error(&format!("No such sound {}", id));
+            log::error(&format!("No such sound {}", id));
         }
     }
 
     pub fn acquire_audio_device(&self) {
         if let Err(e) = self.sender.send(SoundEvent::AcquireDevice) {
-            crate::log::error(&format!("Send acquire message to audio thread failed: {}", e))
+            log::error(&format!("Send acquire message to audio thread failed: {}", e))
         }
     }
 
     pub fn destroy_audio_device(&self) {
         if let Err(e) = self.sender.send(SoundEvent::DestroyDevice) {
-            crate::log::error(&format!("Send destroy message to audio thread failed: {}", e))
+            log::error(&format!("Send destroy message to audio thread failed: {}", e))
         }
     }
 }
@@ -114,12 +115,12 @@ impl Sound {
 fn load_sounds() -> ArcSoundBank {
     let mut result = std::collections::HashMap::new();
 
-    for f in crate::utils::get_files_with_extension_from(
-            crate::consts::SOUND_FOLDER_PATH, Vec::from(crate::consts::SUPPORTED_SOUND_EXTENSIONS)) {
+    for f in utils::get_files_with_extension_from(
+            consts::SOUND_FOLDER_PATH, Vec::from(consts::SUPPORTED_SOUND_EXTENSIONS)) {
         if let Some(name) = f.file_stem() {
             let filename = &String::from(f.to_string_lossy());
             match Sound::new(filename) {
-                Err(e) => crate::log::err(&e.context(format!("Failed to open file {}", filename))),
+                Err(e) => log::err(&e.context(format!("Failed to open file {}", filename))),
                 Ok(s) => { 
                     result.insert(
                         String::from(name.to_string_lossy()), s
@@ -136,7 +137,7 @@ fn try_acquire_audio_device() -> Option<rodio::Device>{
     if let Some(device) = rodio::default_output_device() {
         Some(device)
     } else {
-        crate::log::error("Could not find a sound device for output!");
+        log::error("Could not find a sound device for output!");
         None
     }
 }

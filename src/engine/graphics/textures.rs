@@ -1,3 +1,4 @@
+use crate::engine::prelude::*;
 use std::collections::HashMap;
 use glium::Display;
 
@@ -25,7 +26,7 @@ impl Texture {
     pub fn from<P: AsRef<std::path::Path>>(filename: P, display: &Display)
     -> anyhow::Result<Texture> {
         use anyhow::Context;
-        let tex = crate::utils::load_image(filename)?.to_rgba();
+        let tex = utils::load_image(filename)?.to_rgba();
         let dims = tex.dimensions();
         let tex = glium::texture::RawImage2d::from_raw_rgba(tex.into_raw(), dims);
         Ok(Texture::Regular(
@@ -42,7 +43,7 @@ impl Texture {
         use anyhow::Context;
 
         // Validate this is a square image
-        let size = crate::utils::load_image(crate::utils::extend_filename(filename.as_ref(), "_up"))?.dimensions();
+        let size = utils::load_image(utils::extend_filename(filename.as_ref(), "_up"))?.dimensions();
         if size.0 != size.1 {
             return Err(anyhow!("Cubemap images are not square"));
         }
@@ -66,7 +67,7 @@ impl Texture {
             ).context("Failed to create cubemap fb")?;
 
             // validate size
-            let image = crate::utils::load_image(crate::utils::extend_filename(filename.as_ref(), suffix))?;
+            let image = utils::load_image(utils::extend_filename(filename.as_ref(), suffix))?;
             if image.dimensions().0 != image.dimensions().1 {
                 return Err(anyhow!("Cubemap images are not square"));
             }

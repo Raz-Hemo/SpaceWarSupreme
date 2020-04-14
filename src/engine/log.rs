@@ -1,12 +1,9 @@
 // This module implements a circular log. After X lines are written, 
 // new lines overwrite the oldest ones.
+use crate::engine::prelude::*;
 use chrono::Local;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
-use crate::utils::error_msgbox;
-
-const MAX_LOG_LINES: usize = 1000;
-const CRASH_REPORTS_PATH: &str = "./crash_reports";
 
 #[derive(Debug)]
 pub enum LogLevel {
@@ -36,7 +33,7 @@ pub struct CircularLogIter<'a> {
 
 impl CircularLog {
     pub fn new () -> CircularLog {
-        if MAX_LOG_LINES == 0 {
+        if consts::MAX_LOG_LINES == 0 {
             panic!("Can't have MAX_LOG_LINES be 0");
         }
 
@@ -63,13 +60,13 @@ impl CircularLog {
         };
         println!("{}", log_line.line);
 
-        if self.lines.len() < MAX_LOG_LINES {
+        if self.lines.len() < consts::MAX_LOG_LINES {
             self.lines.push(log_line);
-            self.current_pos = (self.current_pos + 1) % MAX_LOG_LINES;
+            self.current_pos = (self.current_pos + 1) % consts::MAX_LOG_LINES;
         }
         else {
             self.lines[self.current_pos] = log_line;
-            self.current_pos = (self.current_pos + 1) % MAX_LOG_LINES;
+            self.current_pos = (self.current_pos + 1) % consts::MAX_LOG_LINES;
         }
     }
     pub fn error(&mut self, line: &str) {
@@ -130,7 +127,7 @@ lazy_static! {
             // Attempt to acquire logger
             let locked_logger = LOGGER.try_lock();
             if locked_logger.is_err() {
-                error_msgbox(&panic_log);
+                utils::error_msgbox(&panic_log);
                 return;
             }
             let mut locked_logger = locked_logger.unwrap();
@@ -140,12 +137,13 @@ lazy_static! {
 
             // Open a crash report file
             use std::io::{Write};
-            let f = std::fs::File::create(format!("{}/{}",
-                                                  CRASH_REPORTS_PATH,
-                                                  Local::now().format("%Y-%m-%d %H-%M-%S.txt")
+            let f = std::fs::File::create(
+                format!("{}/{}",
+                    consts::CRASH_REPORTS_PATH,
+                    Local::now().format("%Y-%m-%d %H-%M-%S.txt")
             ));
             if f.is_err() {
-                error_msgbox(&panic_log);
+                utils::error_msgbox(&panic_log);
                 return;
             }
             let mut f = std::io::BufWriter::new(f.unwrap());
@@ -159,11 +157,11 @@ lazy_static! {
             
             // Best effort flush
             if f.flush().is_err() {
-                error_msgbox(&panic_log);
+                utils::error_msgbox(&panic_log);
                 return;
             }
     
-            error_msgbox(&panic_log);
+            utils::error_msgbox(&panic_log);
         }));
 
         result

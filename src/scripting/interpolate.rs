@@ -1,3 +1,5 @@
+use crate::engine::prelude::*;
+
 /// Different interpolation methods make the motion appear different.
 #[derive(Debug, Clone, Copy)]
 pub enum InterpType {
@@ -39,7 +41,7 @@ impl<T: Interpolate + Clone + Copy> Interpolated<T> {
             return self.dst
         }
 
-        let normtime = crate::utils::clamp(
+        let normtime = utils::clamp(
             self.start.elapsed().as_secs_f32() / self.duration,
             0.0,
             1.0

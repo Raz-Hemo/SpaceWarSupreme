@@ -1,15 +1,14 @@
+use crate::engine::prelude::*;
 use glium::glutin::{ContextBuilder, window::{WindowBuilder, Icon}};
 use winit::{
     dpi::LogicalSize,
     event_loop::EventLoop,
 };
 
-use crate::utils;
-
 pub fn make_window(eventloop: &EventLoop<()>) -> glium::Display {
     // Load the icon
     use image::GenericImageView;
-    let icon = match utils::load_image(crate::consts::ICON_PATH) {
+    let icon = match utils::load_image(consts::ICON_PATH) {
         Ok(img) => {
             let (width, height) = img.dimensions();
             let img = img.into_rgba().into_raw();
@@ -23,10 +22,10 @@ pub fn make_window(eventloop: &EventLoop<()>) -> glium::Display {
     
     glium::Display::new(
         WindowBuilder::new()
-        .with_title(crate::consts::WINDOW_NAME)
+        .with_title(consts::WINDOW_NAME)
         .with_inner_size(LogicalSize::new(
-            crate::consts::DEFAULT_RESOLUTION[0], 
-            crate::consts::DEFAULT_RESOLUTION[1]))
+            consts::DEFAULT_RESOLUTION[0], 
+            consts::DEFAULT_RESOLUTION[1]))
         .with_window_icon(icon)
         .with_resizable(false),
         ContextBuilder::new().with_depth_buffer(24),

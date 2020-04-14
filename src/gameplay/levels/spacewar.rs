@@ -1,3 +1,4 @@
+use crate::engine::prelude::*;
 use specs::{WorldExt, Builder, World};
 use crate::engine::components;
 
@@ -91,7 +92,7 @@ impl SpaceWarLevel {
         if let Ok(credits) = std::fs::read_to_string("./resources/credits.txt") {
             credits +
             "\n# Rust packages\n" +
-            &crate::utils::get_game_dependencies()
+            &utils::get_engine_dependencies()
                 .iter()
                 .map(|s| format!("{}\n", s))
                 .collect::<String>()

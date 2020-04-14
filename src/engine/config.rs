@@ -1,5 +1,5 @@
+use crate::engine::prelude::*;
 use std::collections::BTreeMap;
-use crate::consts;
 
 // Define a struct that can be created at runtime from a string.
 macro_rules! deserializable_struct {
@@ -17,12 +17,12 @@ macro_rules! deserializable_struct {
                         Some(s) => match s.parse::<$field_type>() {
                             Ok(v) => v,
                             Err(_) => {
-                                crate::log::error(&format!("Failed to parse config value {}", stringify!($field_name)));
+                                log::error(&format!("Failed to parse config value {}", stringify!($field_name)));
                                 $field_default
                             }
                         },
                         None => {
-                            crate::log::error(&format!("No config value found for {}", stringify!($field_name)));
+                            log::error(&format!("No config value found for {}", stringify!($field_name)));
                             $field_default
                         },
                     },)*
@@ -53,7 +53,7 @@ deserializable_struct! {
 impl Config {
     // Reads the configuration file. If it's invalid, default values are loaded instead.
     pub fn load() -> Config {
-        if let Ok(lines) = crate::utils::read_file_lines(consts::CONFIG_FILE_PATH) {
+        if let Ok(lines) = utils::read_file_lines(consts::CONFIG_FILE_PATH) {
             let mut map: BTreeMap<String, String> = BTreeMap::new();
             for line in lines {
                 let split_line: Vec<&str> = line.split('=').collect();

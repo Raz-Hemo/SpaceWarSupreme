@@ -1,3 +1,4 @@
+use crate::engine::prelude::*;
 use specs::ReadStorage;
 use crate::engine::components::StaticSkyboxComponent;
 
@@ -33,8 +34,8 @@ impl<'a> specs::System<'a> for StaticSkyboxSystem {
             if self.skybox.is_some() {
                 if self.last_multi_skybox_warning.is_none() ||
                 self.last_multi_skybox_warning.unwrap().elapsed().as_secs_f32() >
-                crate::consts::MULTI_SKYBOX_WARNING_INTERVAL_SECONDS {
-                    crate::log::warning("Multiple skyboxes are visible. This hurts performance.");
+                consts::MULTI_SKYBOX_WARNING_INTERVAL_SECONDS {
+                    log::warning("Multiple skyboxes are visible. This hurts performance.");
                     self.last_multi_skybox_warning = Some(std::time::Instant::now());
                 }
                 break;

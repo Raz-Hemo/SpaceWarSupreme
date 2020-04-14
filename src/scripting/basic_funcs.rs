@@ -1,13 +1,15 @@
+use crate::engine::prelude::*;
+
 pub fn error(x: String) -> () {
-    crate::log::error(&x);
+    log::error(&x);
 }
 
 pub fn warning(x: String) -> () {
-    crate::log::warning(&x);
+    log::warning(&x);
 }
 
 pub fn info(x: String) -> () {
-    crate::log::info(&x);
+    log::info(&x);
 }
 
 pub fn vec3(x: f64, y: f64, z: f64) -> nalgebra::Vector3<f32> {

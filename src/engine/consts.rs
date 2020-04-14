@@ -14,3 +14,7 @@ pub const DEFAULT_FAR_CLIP: f32 = 10000.0;
 pub const DEFAULT_INSTANCE_BUFFER_SIZE: usize = 65536;
 
 pub const MULTI_SKYBOX_WARNING_INTERVAL_SECONDS: f32 = 60.0;
+pub const LOCALIZATION_PATH: &str = "./resources/localization";
+pub const LOCALIZATION_EXTENSION: &str = "json";
+pub const MAX_LOG_LINES: usize = 1000;
+pub const CRASH_REPORTS_PATH: &str = "./crash_reports";

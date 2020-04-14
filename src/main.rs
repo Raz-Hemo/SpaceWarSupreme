@@ -22,18 +22,16 @@ extern crate sanitize_filename;
 #[macro_use]
 extern crate anyhow;
 
-mod log;
 mod gameplay;
 use gameplay::levels::spacewar;
 mod scripting;
-mod utils;
-mod consts;
 mod engine;
 
 use winit::{
     event_loop::ControlFlow,
     event::{Event, WindowEvent},
 };
+use engine::prelude::*;
 
 fn main()
 {

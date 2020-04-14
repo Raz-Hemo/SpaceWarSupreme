@@ -1,5 +1,4 @@
-const LOCALIZATION_PATH: &str = "./resources/localization";
-const LOCALIZATION_EXTENSION: &str = "json";
+use crate::engine::prelude::*;
 
 #[derive(serde::Deserialize)]
 pub struct Localization {
@@ -11,8 +10,8 @@ impl Localization {
         use anyhow::Context;
         Ok(serde_json::from_str::<'_, Localization>(
             &std::fs::read_to_string(
-                std::path::Path::new(LOCALIZATION_PATH)
-                .join(language).with_extension(LOCALIZATION_EXTENSION)
+                std::path::Path::new(consts::LOCALIZATION_PATH)
+                .join(language).with_extension(consts::LOCALIZATION_EXTENSION)
             ).context(format!("Localization for {} not found", language))?
         )?)
     }
@@ -22,9 +21,10 @@ impl Localization {
     }
 
     pub fn get_available_languages() -> Vec<String> {
-        super::get_files_with_extension_from(LOCALIZATION_PATH, vec![LOCALIZATION_EXTENSION])
-               .into_iter()
-               .map(|p| String::from(p.file_stem().unwrap().to_string_lossy()))
-               .collect()
+        utils::get_files_with_extension_from(
+            consts::LOCALIZATION_PATH, vec![consts::LOCALIZATION_EXTENSION]
+        ).into_iter()
+        .map(|p| String::from(p.file_stem().unwrap().to_string_lossy()))
+        .collect()
     }
 }

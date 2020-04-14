@@ -1,3 +1,4 @@
+use crate::engine::prelude::*;
 use rhai::{Engine, RegisterFn};
 use crate::engine::camera::Camera;
 use nalgebra::{Point3, Vector3};
@@ -97,8 +98,8 @@ pub fn new_engine() -> Engine<'static> {
 }
 
 pub fn get_scripts_in_folder<P: AsRef<std::path::Path>>(path: P) -> Vec<std::path::PathBuf> {
-    crate::utils::get_files_with_extension_from(
+    utils::get_files_with_extension_from(
         path,
-        vec![crate::consts::SCRIPT_FILE_EXTENSION]
+        vec![consts::SCRIPT_FILE_EXTENSION]
     )
 }

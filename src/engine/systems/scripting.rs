@@ -1,3 +1,4 @@
+use crate::engine::prelude::*;
 use std::collections::{HashMap, HashSet};
 use specs::WriteStorage;
 use crate::engine::components::{ScriptingComponent, MouseComponent, KeyboardComponent};
@@ -35,7 +36,7 @@ impl ScriptingSystem {
                 true
             },
             Err(e) => {
-                crate::log::error(&format!("Failed to compile script {}: {}", path, e));
+                log::error(&format!("Failed to compile script {}: {}", path, e));
                 self.bad_scripts.insert(String::from(path));
                 false
             },
@@ -84,7 +85,7 @@ impl<'a> specs::System<'a> for ScriptingSystem {
                     (),
                 ) {
                     Ok(new_self) => script.object_self = new_self,
-                    Err(e) => crate::log::error(&format!("spawn failed: {:?}", e)),
+                    Err(e) => log::error(&format!("spawn failed: {:?}", e)),
                 }
             }
 
@@ -97,7 +98,7 @@ impl<'a> specs::System<'a> for ScriptingSystem {
                         (script.object_self.clone(), e.0.clone(), e.1),
                     ) {
                         Ok(new_self) => script.object_self = new_self,
-                        Err(e) => crate::log::error(&format!("on_kb failed: {:?}", e)),
+                        Err(e) => log::error(&format!("on_kb failed: {:?}", e)),
                     }
                 }
             }
@@ -112,7 +113,7 @@ impl<'a> specs::System<'a> for ScriptingSystem {
                         (script.object_self.clone(),),
                     ) {
                         Ok(new_self) => script.object_self = new_self,
-                        Err(e) => crate::log::error(&format!("lclick failed: {:?}", e)),
+                        Err(e) => log::error(&format!("lclick failed: {:?}", e)),
                     }
                     println!("{:?}", script.object_self);
                 }

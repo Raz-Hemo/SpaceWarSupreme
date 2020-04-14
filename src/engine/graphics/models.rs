@@ -1,3 +1,4 @@
+use crate::engine::prelude::*;
 use std::collections::HashMap;
 use glium::{Display, VertexBuffer, IndexBuffer};
 use itertools::izip;
@@ -84,7 +85,7 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
     pub fn from<P: AsRef<std::path::Path>>(filename: P, display: &Display) -> anyhow::Result<Model<Vertex>> {
         use anyhow::Context;
         let path = std::path::PathBuf::from("./resources/models/").join(&filename);
-        let model_data = match crate::utils::should_load_from_cache(&path) {
+        let model_data = match utils::should_load_from_cache(&path) {
             (true, Some(cache_path)) => Model::from_cache(cache_path),
             (false, Some(cache_path)) => {
                 let m = Model::<Vertex>::from_gltf(path)?;

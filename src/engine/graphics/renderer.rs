@@ -1,3 +1,4 @@
+use crate::engine::prelude::*;
 use glium::glutin::event_loop::EventLoop;
 use glium::{Display, Surface, VertexBuffer};
 use glium::program::Program;
@@ -61,13 +62,13 @@ impl Renderer {
         let program_staticmesh = super::shaders::staticmesh(&display);
         let program_composition = super::shaders::composition(&display);
         let program_skybox = super::shaders::static_skybox(&display);
-        let resolution = crate::consts::DEFAULT_RESOLUTION;
+        let resolution = consts::DEFAULT_RESOLUTION;
         let models_manager = ModelsManager::new(&display);
         let textures_manager = TexturesManager::new(&display);
 
         let picking_pbo: PixelBuffer<u32> = PixelBuffer::new_empty(&display, 1);
         let instance_buffer = VertexBuffer::empty_dynamic(
-            &display, crate::consts::DEFAULT_INSTANCE_BUFFER_SIZE
+            &display, consts::DEFAULT_INSTANCE_BUFFER_SIZE
         ).unwrap();
         let quad_vbuffer = VertexBuffer::immutable(&display, &[
             Vertex2d {
@@ -117,10 +118,10 @@ impl Renderer {
             picking_pbo,
             resolution,
             projection: nalgebra::Matrix4::new_perspective(
-                crate::consts::DEFAULT_ASPECT_RATIO,
-                crate::consts::DEFAULT_VERTICAL_FOV_DEG * std::f32::consts::PI / 180.0,
-                crate::consts::DEFAULT_NEAR_CLIP,
-                crate::consts::DEFAULT_FAR_CLIP,
+                consts::DEFAULT_ASPECT_RATIO,
+                consts::DEFAULT_VERTICAL_FOV_DEG * std::f32::consts::PI / 180.0,
+                consts::DEFAULT_NEAR_CLIP,
+                consts::DEFAULT_FAR_CLIP,
             ).into()
         }
     }
@@ -168,9 +169,9 @@ impl Renderer {
         self.resolution = dims;
         self.projection = nalgebra::Matrix4::new_perspective(
             (dims[0] as f32) / (dims[1] as f32),
-            crate::consts::DEFAULT_VERTICAL_FOV_DEG * std::f32::consts::PI / 180.0,
-            crate::consts::DEFAULT_NEAR_CLIP,
-            crate::consts::DEFAULT_FAR_CLIP,
+            consts::DEFAULT_VERTICAL_FOV_DEG * std::f32::consts::PI / 180.0,
+            consts::DEFAULT_NEAR_CLIP,
+            consts::DEFAULT_FAR_CLIP,
         ).into();
         self.resolution_dependents = Renderer::build_resolution_dependents(&self.display, dims);
     }
@@ -231,7 +232,7 @@ impl Renderer {
 
         for (model, insts) in framebuilder.meshes.iter() {
             {
-                if insts.len() > crate::consts::DEFAULT_INSTANCE_BUFFER_SIZE {
+                if insts.len() > consts::DEFAULT_INSTANCE_BUFFER_SIZE {
                     panic!("Too many instances of one model!")
                 }
                 let mut map = self.instance_buffer.map_write();
@@ -263,8 +264,8 @@ impl Renderer {
             .first_layer()
             .into_image(None).unwrap()
             .raw_read_to_pixel_buffer(&glium::Rect {
-                left: crate::utils::clamp(mouse_coords[0] as u32, 0, self.resolution[0] - 1),
-                bottom: crate::utils::clamp(
+                left: utils::clamp(mouse_coords[0] as u32, 0, self.resolution[0] - 1),
+                bottom: utils::clamp(
                     self.resolution[1] as i32 - mouse_coords[1] as i32,
                     0i32,
                     self.resolution[1] as i32 - 1
