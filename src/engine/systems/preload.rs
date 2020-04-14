@@ -33,7 +33,11 @@ impl<'a> specs::System<'a> for PreloadSystem {
 
     fn run(&mut self, (scripts, meshes, skyboxes): Self::SystemData) {
         use specs::Join;
-
+        self.used_scripts.clear();
+        self.used_meshes.clear();
+        self.used_textures.clear();
+        self.used_cubemaps.clear();
+        
         for script in scripts.join() {
             self.used_scripts.insert(script.path.clone());
         }

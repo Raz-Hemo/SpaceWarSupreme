@@ -4,9 +4,10 @@ use serde::{Serialize, Deserialize};
 pub struct Vertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
+    pub tangent: [f32; 3],
     pub texcoord: [f32; 2],
 }
-glium::implement_vertex!(Vertex, position, normal, texcoord);
+glium::implement_vertex!(Vertex, position, normal, tangent, texcoord);
 
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Vertex2d {

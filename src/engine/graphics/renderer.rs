@@ -213,8 +213,8 @@ impl Renderer {
                 };
                 self.resolution_dependents.rent_mut(|(fb, _)| {
                     fb.draw(
-                        &model.vertices,
-                        &model.indices,
+                        &model.primitives[0].vertices,
+                        &model.primitives[0].indices,
                         program,
                         &uniform!{
                             view: matrix_to_floats(camera.get_view_at_origin()),
@@ -245,13 +245,15 @@ impl Renderer {
             let program = &self.program_staticmesh;
             let proj = self.projection;
             self.resolution_dependents.rent_mut(|(fb, _)| {
-                fb.draw(
-                    (&model_data.vertices, ibufslice.per_instance().unwrap()),
-                    &model_data.indices,
-                    program,
-                    &uniform!{view: matrix_to_floats(camera.get_view()), proj: proj},
-                    &params
-                ).unwrap();
+                for p in model_data.primitives.iter() {
+                    fb.draw(
+                        (&p.vertices, ibufslice.per_instance().unwrap()),
+                        &p.indices,
+                        program,
+                        &uniform!{view: matrix_to_floats(camera.get_view()), proj: proj},
+                        &params
+                    ).unwrap();
+                }
             });
         }
 
@@ -297,15 +299,15 @@ impl Renderer {
         vec![[max_size.width as u32, max_size.height as u32]]
     }
 
-    pub fn load_model(&mut self, m: &str) -> crate::utils::SWSResult<()> {
+    pub fn load_model(&mut self, m: &str) -> anyhow::Result<()> {
         self.models_manager.try_load(&self.display, m)
     }
 
-    pub fn load_texture(&mut self, t: &str) -> crate::utils::SWSResult<()> {
+    pub fn load_texture(&mut self, t: &str) -> anyhow::Result<()> {
         self.textures_manager.try_load(&self.display, t)
     }
     
-    pub fn load_cubemap(&mut self, cm: &str) -> crate::utils::SWSResult<()> {
+    pub fn load_cubemap(&mut self, cm: &str) -> anyhow::Result<()> {
         self.textures_manager.try_load_cubemap(&self.display, cm)
     }
 }

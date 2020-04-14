@@ -23,10 +23,12 @@ winres = "0.1.11"
 rodio = "0.10.0"
 specs = "0.16.1"
 tobj = "1.0.0"
+gltf = "0.15.2"
 nalgebra = "0.21.0"
 itertools = "0.9.0"
 sanitize-filename = "0.2.1"
 rental = "0.5.5"
+anyhow = "1.0.28"
 
 [profile.release]
 opt-level=3

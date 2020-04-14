@@ -48,7 +48,7 @@ impl InputInfo {
         &self.modifiers
     }
 
-    pub fn handle_device_event(&mut self, e: &DeviceEvent) {
+    pub fn handle_device_event(&mut self, _e: &DeviceEvent) {
     }
 
     pub fn handle_window_event(&mut self, e: &WindowEvent, resolution_x: u32, resolution_y: u32) {

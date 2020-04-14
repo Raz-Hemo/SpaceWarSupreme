@@ -19,6 +19,8 @@ extern crate serde;
 extern crate serde_json;
 extern crate bincode;
 extern crate sanitize_filename;
+#[macro_use]
+extern crate anyhow;
 
 mod log;
 mod gameplay;

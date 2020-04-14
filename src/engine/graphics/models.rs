@@ -1,109 +1,99 @@
 use std::collections::HashMap;
 use glium::{Display, VertexBuffer, IndexBuffer};
-use tobj;
 use itertools::izip;
 
 use super::vertex::Vertex;
 
-pub struct Model<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> {
+pub struct Primitive<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> {
     pub vertices: VertexBuffer<V>,
     pub indices: IndexBuffer<u32>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+pub struct Model<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> {
+    pub primitives: Vec<Primitive<V>>,
+}
+
+#[derive(Default, serde::Serialize, serde::Deserialize)]
 pub struct CachedModel<V> {
+    pub primitives: Vec<CachedPrimitive<V>>,
+}
+
+#[derive(Default, serde::Serialize, serde::Deserialize)]
+pub struct CachedPrimitive<V> {
     pub vertices: Vec<V>,
     pub indices: Vec<u32>,
 }
 
 impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> Model<V> {
-    fn from_cache<P: AsRef<std::path::Path>>(filename: P) -> crate::utils::SWSResult<CachedModel<V>> {
-        match std::fs::File::open(filename) {
-            Ok(file) => {
-                let reader = std::io::BufReader::new(file);
-                match bincode::deserialize_from(reader) {
-                    Ok(data) => Ok(data),
-                    Err(e) => Err(format!("Failed loading cached model: {:?}", e))
-                }
-            },
-            Err(e) => Err(format!("Cached model does not exist: {:?}", e))
-        }
+    fn from_cache<P: AsRef<std::path::Path>>(filename: P) -> anyhow::Result<CachedModel<V>> {
+        use anyhow::Context;
+        bincode::deserialize_from(std::io::BufReader::new(
+            std::fs::File::open(filename).context("Cached model does not exist")?
+        )).context("Failed loading cached model")
     }
 
-    fn from_obj<P: AsRef<std::path::Path>>(filename: P) -> crate::utils::SWSResult<CachedModel<Vertex>> {
-        let obj = tobj::load_obj(filename.as_ref());
-        if let Err(e) = obj {
-            return Err(format!("Model does not exist: {:?}", e));
+    fn from_gltf<P: AsRef<std::path::Path>>(filename: P) -> anyhow::Result<CachedModel<Vertex>> {
+        let (gltf, buffers, _images) = gltf::import(filename)?;
+        let mut result = CachedModel::<Vertex>::default();
+
+        for mesh in gltf.meshes() {
+            for p in mesh.primitives() {
+                let mut vertices: Vec<Vertex> = Vec::new();
+
+                let reader = p.reader(|buffer| Some(&buffers[buffer.index()]));
+                let indices = reader.read_indices().ok_or(
+                    anyhow!("Mesh has no indices"))?.into_u32().collect();
+
+                let positions = reader.read_positions().ok_or(
+                    anyhow!("Mesh has no positions"))?;
+                let texcoords = reader.read_tex_coords(0).ok_or(
+                    anyhow!("Mesh has no texcoords"))?.into_f32();
+                let normals = reader.read_normals().ok_or(
+                    anyhow!("Mesh has no normals"))?;
+                let tangents = reader.read_tangents().ok_or(
+                    anyhow!("Mesh has no tangents"))?;
+
+                for (p, tx, n, t) in izip!(positions, texcoords, normals, tangents) {
+                    use std::convert::TryInto;
+                    vertices.push(Vertex {
+                        position: p,
+                        texcoord: tx,
+                        normal: n,
+                        tangent: t[..3].try_into()?,
+                    });
+                }
+                result.primitives.push(CachedPrimitive {vertices, indices})
+            }
         }
-        let (models, _materials) = obj.unwrap();
-        let mut indices: Vec<u32> = Vec::new();
-        let mut vertices: Vec<Vertex> = Vec::new();
 
-        for m in models.iter() {
-            if m.mesh.texcoords.is_empty() {
-                return Err(String::from("Model is missing texcoords"));
-            }
-            if m.mesh.normals.is_empty() {
-                return Err(String::from("Model is missing normals"));
-            }
-
-            // Indices are model-relative, and we flatten them to a single buffer,
-            // so add the base index where we put our model.
-            let indices_base = vertices.len() as u32;
-            for i in m.mesh.indices.iter() {
-                indices.push(indices_base + i);
-            }
-
-            for (p, n, t) in izip!(m.mesh.positions.chunks(3), m.mesh.normals.chunks(3), m.mesh.texcoords.chunks(2))  {
-                vertices.push(Vertex {
-                    position: [p[0], p[1], p[2]],
-                    normal: [n[0], n[1], n[2]],
-                    texcoord: [t[0], t[1]],
-                });
-            }
-        }
-
-        Ok(CachedModel {vertices, indices})
+        Ok(result)
     }
 
     pub fn from_data(cached: CachedModel<V>, display: &Display)
-    -> crate::utils::SWSResult<Model<V>> {
-        let vertices = match VertexBuffer::immutable(display, &cached.vertices) {
-            Ok(buf) => buf,
-            Err(e) => return Err(format!("{:?}", e)),
-        };
-        let indices = match IndexBuffer::immutable(display, glium::index::PrimitiveType::TrianglesList, &cached.indices) {
-            Ok(buf) => buf,
-            Err(e) => return Err(format!("{:?}", e)),
-        };
-
-        Ok(Model {
-            vertices,
-            indices,
-        })
+    -> anyhow::Result<Model<V>> {
+        let mut primitives = Vec::new();
+        for p in cached.primitives {
+            primitives.push(Primitive {
+                vertices: VertexBuffer::immutable(display, &p.vertices)?,
+                indices: IndexBuffer::immutable(display, glium::index::PrimitiveType::TrianglesList, &p.indices)?,
+            });
+        }
+        Ok(Model {primitives})
     }
 
-    pub fn from<P: AsRef<std::path::Path>>(filename: P, display: &Display) -> crate::utils::SWSResult<Model<Vertex>> {
+    pub fn from<P: AsRef<std::path::Path>>(filename: P, display: &Display) -> anyhow::Result<Model<Vertex>> {
+        use anyhow::Context;
         let path = std::path::PathBuf::from("./resources/models/").join(&filename);
         let model_data = match crate::utils::should_load_from_cache(&path) {
             (true, Some(cache_path)) => Model::from_cache(cache_path),
             (false, Some(cache_path)) => {
-                let m = Model::<Vertex>::from_obj(path);
-                if let Err(e) = m {
-                    crate::log::error(&format!("{:?}", e));
-                    return Err(e)
-                }
-                let m = m.unwrap();
-                if let Ok(mut file) = std::fs::File::create(&cache_path) {
-                    match bincode::serialize_into(&mut file, &m) {
-                        Ok(_) => (),
-                        Err(e) => crate::log::error(&format!("Error caching {:?}: {:?}", filename.as_ref(), e)),
-                    }
-                }
+                let m = Model::<Vertex>::from_gltf(path)?;
+                let mut file = std::fs::File::create(&cache_path).context("Error creating cache file")?;
+                bincode::serialize_into(&mut file, &m).context("Error serializing")?;
                 Ok(m)
             },
             _ => {
-                Model::<Vertex>::from_obj(path)
+                Model::<Vertex>::from_gltf(path)
             }
         };
 
@@ -114,28 +104,32 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
     }
 
     pub fn cube(display: &Display) -> Model<Vertex> {
-        Model::<Vertex>::from_data(CachedModel {
+        Model::<Vertex>::from_data(CachedModel { primitives: vec![CachedPrimitive {
             vertices: vec![
                 // +z
                 Vertex {
                     position: [1.0, 1.0, 1.0],
                     normal: [0.0, 0.0, 1.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0],
                 },
                 Vertex {
                     position: [-1.0, 1.0, 1.0],
                     normal: [0.0, 0.0, 1.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0],
                 },
                 Vertex {
                     position: [-1.0, -1.0, 1.0],
                     normal: [0.0, 0.0, 1.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0],
                 },
                 Vertex {
                     position: [1.0, -1.0, 1.0],
                     normal: [0.0, 0.0, 1.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0],
                 },
 
 
@@ -144,21 +138,25 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
                     position: [1.0, 1.0, -1.0],
                     normal: [0.0, 0.0, -1.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0],
                 },
                 Vertex {
                     position: [1.0, -1.0, -1.0],
                     normal: [0.0, 0.0, -1.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0],
                 },
                 Vertex {
                     position: [-1.0, -1.0, -1.0],
                     normal: [0.0, 0.0, -1.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0],
                 },
                 Vertex {
                     position: [-1.0, 1.0, -1.0],
                     normal: [0.0, 0.0, -1.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0],
                 },
 
 
@@ -167,21 +165,25 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
                     position: [1.0, 1.0, 1.0],
                     normal: [1.0, 0.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 1.0, 0.0],
                 },
                 Vertex {
                     position: [1.0, -1.0, 1.0],
                     normal: [1.0, 0.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 1.0, 0.0],
                 },
                 Vertex {
                     position: [1.0, -1.0, -1.0],
                     normal: [1.0, 0.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 1.0, 0.0],
                 },
                 Vertex {
                     position: [1.0, 1.0, -1.0],
                     normal: [1.0, 0.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 1.0, 0.0],
                 },
 
 
@@ -190,21 +192,25 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
                     position: [-1.0, 1.0, 1.0],
                     normal: [-1.0, 0.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 1.0, 0.0],
                 },
                 Vertex {
                     position: [-1.0, 1.0, -1.0],
                     normal: [-1.0, 0.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 1.0, 0.0],
                 },
                 Vertex {
                     position: [-1.0, -1.0, -1.0],
                     normal: [-1.0, 0.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 1.0, 0.0],
                 },
                 Vertex {
                     position: [-1.0, -1.0, 1.0],
                     normal: [-1.0, 0.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 1.0, 0.0],
                 },
 
 
@@ -213,21 +219,25 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
                     position: [-1.0, 1.0, 1.0],
                     normal: [0.0, 1.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 0.0, 1.0],
                 },
                 Vertex {
                     position: [1.0, 1.0, 1.0],
                     normal: [0.0, 1.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 0.0, 1.0],
                 },
                 Vertex {
                     position: [1.0, 1.0, -1.0],
                     normal: [0.0, 1.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 0.0, 1.0],
                 },
                 Vertex {
                     position: [-1.0, 1.0, -1.0],
                     normal: [0.0, 1.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 0.0, 1.0],
                 },
 
                 // -y
@@ -235,21 +245,25 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
                     position: [-1.0, -1.0, 1.0],
                     normal: [0.0, -1.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 0.0, 1.0],
                 },
                 Vertex {
                     position: [1.0, -1.0, 1.0],
                     normal: [0.0, -1.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 0.0, 1.0],
                 },
                 Vertex {
                     position: [1.0, -1.0, -1.0],
                     normal: [0.0, -1.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 0.0, 1.0],
                 },
                 Vertex {
                     position: [-1.0, -1.0, -1.0],
                     normal: [0.0, -1.0, 0.0],
                     texcoord: [0.0, 0.0],
+                    tangent: [0.0, 0.0, 1.0],
                 }
             ],
             indices: vec![
@@ -260,7 +274,7 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
                 16, 17, 18, 16, 18, 19, // top
                 22, 21, 20, 23, 22, 20  // bottom
             ]
-        }, display).expect("Failed to create cube")
+        }]}, display).expect("Failed to create cube")
     }
 }
 
@@ -280,14 +294,16 @@ impl ModelsManager {
         self.models.get(name).unwrap_or(&self.default_model)
     }
 
-    pub fn try_load(&mut self, display: &Display, name: &str) -> crate::utils::SWSResult<()> {
+    pub fn try_load(&mut self, display: &Display, name: &str) -> anyhow::Result<()> {
+        use anyhow::Context;
         if self.models.contains_key(name) {
             return Ok(())
         }
 
-        match Model::<Vertex>::from(name, display) {
-            Ok(m) => {self.models.insert(String::from(name), m); Ok(())},
-            Err(e) => Err(e)
-        }
+        self.models.insert(
+            String::from(name),
+            Model::<Vertex>::from(name, display).context(format!("Failed to load {}", name))?
+        );
+        Ok(())
     }
 }
