@@ -97,22 +97,12 @@ impl std::convert::AsRef<[u8]> for Sound {
 }
 
 impl Sound {
-    pub fn new(filename: &str) -> crate::utils::SWSResult<Sound> {
-        use std::io::Read;
-        use std::fs::File;
+    pub fn new<P: AsRef<std::path::Path>>(filename: P) -> anyhow::Result<Sound> {
+        use anyhow::Context;
 
-        let file = File::open(filename);
-        if file.is_err() {
-            return Err(format!("Failed to open sound file {}", filename));
-        }
-        let mut file = file.unwrap();
-
-        let mut buf = Vec::new();
-        if file.read_to_end(&mut buf).is_err() {
-            return Err(format!("Failed to read sound file {}", filename));
-        }
-
-        Ok(Sound { samples: std::sync::Arc::new(buf) })
+        Ok(Sound { samples: std::sync::Arc::new(
+            std::fs::read(filename).context("Failed to read sound file")?
+        )})
     }
     pub fn decoder(self: &Self) -> rodio::Decoder<io::Cursor<Sound>> {
         rodio::Decoder::new(io::Cursor::new(
@@ -129,10 +119,11 @@ fn load_sounds() -> ArcSoundBank {
         if let Some(name) = f.file_stem() {
             let filename = &String::from(f.to_string_lossy());
             match Sound::new(filename) {
-                Err(e) => crate::log::error(&e),
-                Ok(s) => { result.insert(
-                    String::from(name.to_string_lossy()), 
-                    s);
+                Err(e) => crate::log::err(&e.context(format!("Failed to open file {}", filename))),
+                Ok(s) => { 
+                    result.insert(
+                        String::from(name.to_string_lossy()), s
+                    );
                 },
             }
         }

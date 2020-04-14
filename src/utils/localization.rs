@@ -1,29 +1,24 @@
 const LOCALIZATION_PATH: &str = "./resources/localization";
 const LOCALIZATION_EXTENSION: &str = "json";
-type LocalizationDict = std::collections::HashMap<String, String>;
+
+#[derive(serde::Deserialize)]
 pub struct Localization {
-    pub dict: LocalizationDict,
+    dict: std::collections::HashMap<String, String>,
 }
 
-impl<'a> Localization {
-    pub fn from(language: &str) -> super::SWSResult<Localization> {
-        let json_result: serde_json::Result<LocalizationDict> = serde_json::from_str(
-            &super::read_file(std::path::Path::new(LOCALIZATION_PATH)
-            .join(language).with_extension(LOCALIZATION_EXTENSION))?
-        );
-        if json_result.is_ok() {
-            Ok(Localization{ dict: json_result.unwrap() })
-        } else {
-            Err(format!("Localization for {} not found", language))
-        }
+impl Localization {
+    pub fn from(language: &str) -> anyhow::Result<Localization> {
+        use anyhow::Context;
+        Ok(serde_json::from_str::<'_, Localization>(
+            &std::fs::read_to_string(
+                std::path::Path::new(LOCALIZATION_PATH)
+                .join(language).with_extension(LOCALIZATION_EXTENSION)
+            ).context(format!("Localization for {} not found", language))?
+        )?)
     }
 
-    pub fn get(self: &'a Localization, key: &'a str) -> &str {
-        if let Some(val) = self.dict.get(key) {
-            &val
-        } else {
-            key
-        }
+    pub fn get<'a>(&'a self, key: &'a str) -> &'a str {
+        self.dict.get(key).map(|s| &s[..]).unwrap_or(key)
     }
 
     pub fn get_available_languages() -> Vec<String> {

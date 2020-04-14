@@ -1,6 +1,5 @@
 // This module implements a circular log. After X lines are written, 
 // new lines overwrite the oldest ones.
-// Usage is "use crate::log" to include and "logger().info("asd") " to write lines
 use chrono::Local;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
@@ -173,6 +172,10 @@ lazy_static! {
 
 pub fn error(line: &str) {
     LOGGER.lock().expect("Logger object is poisoned").error(line);
+}
+
+pub fn err(e: &anyhow::Error) {
+    LOGGER.lock().expect("Logger object is poisoned").error(&format!("{:#}", e));
 }
 
 pub fn warning(line: &str) {

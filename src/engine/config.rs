@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use crate::log;
 use crate::consts;
 
 // Define a struct that can be created at runtime from a string.
@@ -18,12 +17,12 @@ macro_rules! deserializable_struct {
                         Some(s) => match s.parse::<$field_type>() {
                             Ok(v) => v,
                             Err(_) => {
-                                log::error(&format!("Failed to parse config value {}", stringify!($field_name)));
+                                crate::log::error(&format!("Failed to parse config value {}", stringify!($field_name)));
                                 $field_default
                             }
                         },
                         None => {
-                            log::error(&format!("No config value found for {}", stringify!($field_name)));
+                            crate::log::error(&format!("No config value found for {}", stringify!($field_name)));
                             $field_default
                         },
                     },)*
@@ -69,25 +68,21 @@ impl Config {
         }
     }
 
-    pub fn dump(self: &Config) -> crate::utils::SWSResult<()> {
-        if let Ok(file) = std::fs::File::create(consts::CONFIG_FILE_PATH) {
-            use std::io::Write;
-            let mut file = std::io::LineWriter::new(file);
-    
-            for (k, v) in self.serialize().iter() {
-                // Best effort saving of config
-                if let Err(_) = file.write_all(format!("{}={}\n", k, v).as_bytes()) {
-                    continue;
-                }
+    pub fn dump(self: &Config) -> anyhow::Result<()> {
+        use anyhow::Context;
+        use std::io::Write;
+        let file = std::fs::File::create(consts::CONFIG_FILE_PATH)
+        .context("Failed to open config file")?;
+        let mut file = std::io::LineWriter::new(file);
+
+        for (k, v) in self.serialize().iter() {
+            // Best effort saving of config
+            if let Err(_) = file.write_all(format!("{}={}\n", k, v).as_bytes()) {
+                continue;
             }
-    
-            match file.flush() {
-                Ok(_) => Ok(()),
-                Err(e) => Err(format!("Failed flushing config: {}", e)),
-            }
-        } else {
-            Err(String::from("Failed to open config file"))
         }
+
+        file.flush().context("Failed flushing config")
     }
 }
 

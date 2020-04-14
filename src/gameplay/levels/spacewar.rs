@@ -88,7 +88,7 @@ impl SpaceWarLevel {
     }
 
     fn get_credits() -> String {
-        if let Ok(credits) = crate::utils::read_file("./resources/credits.txt") {
+        if let Ok(credits) = std::fs::read_to_string("./resources/credits.txt") {
             credits +
             "\n# Rust packages\n" +
             &crate::utils::get_game_dependencies()

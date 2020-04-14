@@ -53,17 +53,17 @@ impl Engine {
             }
             for m in result.system_preload.used_meshes.iter() {
                 if let Err(e) = result.renderer.load_model(&m) {
-                    crate::log::error(&format!("Failed to load {}: {}", m, e));
+                    crate::log::err(&e);
                 }
             }
             for t in result.system_preload.used_textures.iter() {
                 if let Err(e) = result.renderer.load_texture(&t) {
-                    crate::log::error(&format!("Failed to load {}: {}", t, e));
+                    crate::log::err(&e);
                 }
             }
             for cm in result.system_preload.used_cubemaps.iter() {
                 if let Err(e) = result.renderer.load_cubemap(&cm) {
-                    crate::log::error(&format!("Failed to load {}: {}", cm, e));
+                    crate::log::err(&e);
                 }
             }
         }

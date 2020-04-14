@@ -1,4 +1,3 @@
-use crate::log;
 use crate::utils;
 use crate::gameplay::types::{StarSystem, Star};
 use rhai::{RegisterFn, Scope};
@@ -104,7 +103,7 @@ pub fn poisson_distribution(num_cells: usize) -> Vec<(f64, f64)> {
 }
 
 
-pub fn apply_mask<P: AsRef<std::path::Path>>(points: Vec<(f64, f64)>, mask_path: P) -> utils::SWSResult<Vec<(f64, f64)>> {
+pub fn apply_mask<P: AsRef<std::path::Path>>(points: Vec<(f64, f64)>, mask_path: P) -> anyhow::Result<Vec<(f64, f64)>> {
     use image::GenericImageView;
     let img = utils::load_image(mask_path)?;
     let mut points = points;
@@ -124,28 +123,28 @@ fn generate_star_system(x: f32, y: f32) -> StarSystem {
     }
 }
 
-pub fn execute_map_generator(
-    mapgen_path: &str, 
-    stargen_path: &str,
-    namegen_path: &str) 
-        -> crate::utils::SWSResult<Vec<StarSystem>> {
-    let mapgen_script: String = crate::utils::read_file(mapgen_path)?;
-    let stargen_script: String = crate::utils::read_file(stargen_path)?;
-    let namegen_script: String = crate::utils::read_file(namegen_path)?;
+pub fn execute_map_generator<P: AsRef<std::path::Path>>(
+mapgen_path: P, 
+stargen_path: P,
+namegen_path: P)
+-> anyhow::Result<Vec<StarSystem>> {
+    use anyhow::Context;
+    let mapgen_script: String = std::fs::read_to_string(mapgen_path.as_ref())
+    .context(format!("Failed to open {:?}", mapgen_path.as_ref()))?;
+    let _stargen_script: String = std::fs::read_to_string(stargen_path.as_ref())
+    .context(format!("Failed to open {:?}", stargen_path.as_ref()))?;
+    let namegen_script: String = std::fs::read_to_string(namegen_path.as_ref())
+    .context(format!("Failed to open {:?}", namegen_path.as_ref()))?;
 
     let mut engine = crate::scripting::new_engine();
     let mut scope = Scope::new();
-    if let Err(e) = engine.eval_with_scope::<()>(&mut scope, &namegen_script) {
-        log::error("Namegen script failed with error");
-        return Err(format!("{:?}", e));
-    }
+    engine.eval_with_scope::<()>(&mut scope, &namegen_script).context(
+        "Namegen script failed"
+    )?;
 
     engine.register_fn("make_star_vector", Vec::new as fn()->Vec<Star>);
     engine.register_fn("push", Vec::push as fn(&mut Vec<Star>, Star));
     engine.register_fn("generate_star_system", generate_star_system);
 
-    match engine.eval::<Vec<StarSystem>>(&mapgen_script) {
-        Ok(result) => Ok(result),
-        Err(e) => Err(format!("{:?}", e)),
-    }
+    engine.eval::<Vec<StarSystem>>(&mapgen_script).context("Mapgen script failed")
 }

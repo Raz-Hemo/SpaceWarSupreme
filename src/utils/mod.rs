@@ -1,5 +1,3 @@
-pub type SWSResult<T> = Result<T, String>;
-
 mod localization;
 pub use localization::Localization;
 
@@ -35,29 +33,21 @@ pub fn clamp<T: PartialOrd> (x: T, min: T, max: T) -> T {
     }
 }
 
-pub fn read_file<P: AsRef<std::path::Path>>(path: P) -> SWSResult<String> {
-    if let Ok(content) = std::fs::read_to_string(path.as_ref()) {
-        Ok(content)
-    } else {
-        Err(format!("Failed opening file {}", path.as_ref().to_string_lossy()))
-    }
-}
-
-pub fn read_file_lines<P: AsRef<std::path::Path>>(path: P) -> SWSResult<Vec<String>> {
+pub fn read_file_lines<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Vec<String>> {
     use std::io::BufRead;
-    if let Ok(file) = std::fs::File::open(path.as_ref()) {
-        Ok(std::io::BufReader::new(file).lines().filter_map(|x| x.ok()).collect())
-    } else {
-        Err(format!("Failed opening file {}", path.as_ref().to_string_lossy()))
-    }
+    use anyhow::Context;
+    Ok(
+        std::io::BufReader::new(
+            std::fs::File::open(path.as_ref())
+            .context(format!("Failed opening file {}", path.as_ref().to_string_lossy()))?
+        ).lines().filter_map(|x| x.ok()).collect()
+    )
 }
 
-pub fn load_image<P: AsRef<std::path::Path>>(path: P) -> SWSResult<image::DynamicImage> {
-    if let Ok(img) = image::open(path.as_ref()) {
-        Ok(img)
-    } else {
-        Err(format!("Failed opening image {}", path.as_ref().to_string_lossy()))
-    }
+pub fn load_image<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<image::DynamicImage> {
+    use anyhow::Context;
+    image::open(path.as_ref()).context(
+        format!("Failed opening image {}", path.as_ref().to_string_lossy()))
 }
 
 pub fn get_game_dependencies() -> Vec<String> {
