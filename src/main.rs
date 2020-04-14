@@ -23,9 +23,8 @@ extern crate sanitize_filename;
 extern crate anyhow;
 
 mod gameplay;
-use gameplay::levels::spacewar;
-mod scripting;
 mod engine;
+use gameplay::levels::spacewar;
 
 use winit::{
     event_loop::ControlFlow,

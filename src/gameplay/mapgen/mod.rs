@@ -136,7 +136,7 @@ namegen_path: P)
     let namegen_script: String = std::fs::read_to_string(namegen_path.as_ref())
     .context(format!("Failed to open {:?}", namegen_path.as_ref()))?;
 
-    let mut engine = crate::scripting::new_engine();
+    let mut engine = crate::engine::scripting::new_engine();
     let mut scope = Scope::new();
     engine.eval_with_scope::<()>(&mut scope, &namegen_script).context(
         "Namegen script failed"

@@ -15,7 +15,7 @@ impl Camera {
     }
 }
 
-impl crate::scripting::interpolate::Interpolate for Camera {
+impl crate::engine::scripting::interpolate::Interpolate for Camera {
     fn get(&self, other: &Camera, alpha: f32) -> Camera {
         let result = Camera {
             quat: self.quat.try_slerp(&other.quat, alpha, 0.0001).unwrap_or(

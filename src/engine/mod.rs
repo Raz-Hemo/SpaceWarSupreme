@@ -10,6 +10,7 @@ pub mod log;
 pub mod utils;
 pub mod consts;
 pub mod localization;
+pub mod scripting;
 pub mod prelude;
 use crate::gameplay::levels::Level;
 
@@ -99,7 +100,7 @@ impl Engine {
         }
 
         for e in self.system_scripting.get_game_context().events.iter() {
-            use crate::scripting::GameEvent;
+            use crate::engine::scripting::GameEvent;
             match e {
                 GameEvent::ExitGame => {
                     if let Err(e) = self.cfg.dump() {

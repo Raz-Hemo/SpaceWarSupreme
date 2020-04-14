@@ -2,7 +2,7 @@ use crate::engine::prelude::*;
 use std::collections::{HashMap, HashSet};
 use specs::WriteStorage;
 use crate::engine::components::{ScriptingComponent, MouseComponent, KeyboardComponent};
-use crate::scripting::{new_engine, GameContext};
+use crate::engine::scripting::{new_engine, GameContext};
 use rhai::{Engine, Scope, AST};
 
 pub struct ScriptingSystem {
