@@ -19,6 +19,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate bincode;
 extern crate sanitize_filename;
+extern crate base64;
 #[macro_use]
 extern crate anyhow;
 

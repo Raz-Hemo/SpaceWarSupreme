@@ -43,4 +43,8 @@ impl crate::engine::graphics::Camera for Camera {
             &self.quat.transform_vector(&Vector3::y_axis()),
         )
     }
+
+    fn get_world_position(&self) -> nalgebra::Point3<f32> {
+        self.pos
+    }
 }

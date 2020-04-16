@@ -101,7 +101,11 @@ impl super::Renderer {
                 14, 13, 12, 15, 14, 12, // left
                 18, 17, 16, 19, 18, 16, // top
                 20, 21, 22, 20, 22, 23  // bottom
-            ]
+            ],
+            albedo: None,
+            normalmap: None,
+            metal_roughness: None,
+            occlusion: None,
         }]},
         display).expect("Failed to create skybox vbuffer")
     }

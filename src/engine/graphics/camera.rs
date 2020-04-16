@@ -5,4 +5,7 @@ pub trait Camera {
 
     /// Get view matrix without the translation component (for skyboxing)
     fn get_view_at_origin(&self) -> nalgebra::Matrix4<f32>;
+
+    /// Get the world position of the camera
+    fn get_world_position(&self) -> nalgebra::Point3<f32>;
 }

@@ -51,6 +51,7 @@ impl Engine {
             audio: audio::AudioManager::new(),
             renderer,
         };
+        result.renderer.resize_window([result.cfg.resolution_x, result.cfg.resolution_y]);
 
         for space in result.level.iter_spaces() {
             result.system_preload.run_now(space);
