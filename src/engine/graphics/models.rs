@@ -8,6 +8,10 @@ use super::vertex::Vertex;
 pub struct Primitive<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> {
     pub vertices: VertexBuffer<V>,
     pub indices: IndexBuffer<u32>,
+    pub albedo: Option<glium::texture::CompressedSrgbTexture2d>,
+    pub normalmap: Option<glium::texture::CompressedTexture2d>,
+    pub metal_roughness: Option<glium::texture::CompressedTexture2d>,
+    pub occlusion: Option<glium::texture::CompressedTexture2d>,
 }
 
 pub struct Model<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> {
@@ -23,6 +27,10 @@ pub struct CachedModel<V> {
 pub struct CachedPrimitive<V> {
     pub vertices: Vec<V>,
     pub indices: Vec<u32>,
+    pub albedo: Option<Vec<u8>>,
+    pub normalmap: Option<Vec<u8>>,
+    pub metal_roughness: Option<Vec<u8>>,
+    pub occlusion: Option<Vec<u8>>,
 }
 
 impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> Model<V> {
@@ -33,13 +41,85 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
         )).context("Failed loading cached model")
     }
 
+    fn gltf_get_texture<P: AsRef<std::path::Path>>
+    (tex: &gltf::Texture<'_>,
+    buffers: &Vec<gltf::buffer::Data>,
+    filename: P) -> anyhow::Result<Vec<u8>> {
+        use anyhow::Context;
+        Ok(match tex.source().source() {
+            gltf::image::Source::View { view, mime_type } => {
+                let parent_buffer_data = &buffers[view.buffer().index()].0;
+                let begin = view.offset();
+                let end = begin + view.length();
+                let data = &parent_buffer_data[begin..end];
+                match mime_type {
+                    "image/jpeg" => data.iter().cloned().collect::<Vec<u8>>(),
+                    "image/png" => data.iter().cloned().collect::<Vec<u8>>(),
+                    _ => Err(anyhow!("Unsupported image type (image: {:?}, mime_type: {})", tex.name(), mime_type))?,
+                }
+            },
+            gltf::image::Source::Uri { uri, mime_type } => {
+                if uri.starts_with("data:") {
+                    let encoded = uri.split(',').nth(1).context("Failed to process uri")?;
+                    let data = base64::decode(&encoded).context("Failed to decode base64")?;
+                    let mime_type = if let Some(ty) = mime_type {
+                        ty
+                    } else {
+                        uri.split(',')
+                            .nth(0).context("Failed to process uri")?
+                            .split(':')
+                            .nth(1).context("Failed to process uri")?
+                            .split(';')
+                            .nth(0).context("Failed to process uri")?
+                    };
+
+                    match mime_type {
+                        "image/jpeg" => data,
+                        "image/png" => data,
+                        _ => Err(anyhow!("Unsupported image type (image: {:?}, mime_type: {})", tex.name(), mime_type))?,
+                    }
+                }
+                else if let Some(mime_type) = mime_type {
+                    let path = filename.as_ref().parent().unwrap_or(std::path::Path::new("./")).join(uri);
+                    match mime_type {
+                        "image/jpeg" => std::fs::read(path)?,
+                        "image/png" => std::fs::read(path)?,
+                        _ => Err(anyhow!("Unsupported image type (image: {:?}, mime_type: {})", tex.name(), mime_type))?,
+                    }
+                }
+                else {
+                    std::fs::read(filename.as_ref().parent().unwrap_or(std::path::Path::new("./")).join(uri))?
+                }
+            },
+        })
+    }
+
     fn from_gltf<P: AsRef<std::path::Path>>(filename: P) -> anyhow::Result<CachedModel<Vertex>> {
-        let (gltf, buffers, _images) = gltf::import(filename)?;
+        let (gltf, buffers, _images) = gltf::import(filename.as_ref())?;
         let mut result = CachedModel::<Vertex>::default();
 
         for mesh in gltf.meshes() {
             for p in mesh.primitives() {
                 let mut vertices: Vec<Vertex> = Vec::new();
+                let mut albedo: Option<Vec<u8>> = None;
+                if let Some(color) = p.material().pbr_metallic_roughness().base_color_texture() {
+                    albedo = Some(Self::gltf_get_texture(&color.texture(), &buffers, filename.as_ref())?);
+                }
+
+                let mut normalmap: Option<Vec<u8>> = None;
+                if let Some(norms) = p.material().normal_texture() {
+                    normalmap = Some(Self::gltf_get_texture(&norms.texture(), &buffers, filename.as_ref())?);
+                }
+
+                let mut metal_roughness: Option<Vec<u8>> = None;
+                if let Some(mr) = p.material().pbr_metallic_roughness().metallic_roughness_texture() {
+                    metal_roughness = Some(Self::gltf_get_texture(&mr.texture(), &buffers, filename.as_ref())?);
+                }
+
+                let mut occlusion: Option<Vec<u8>> = None;
+                if let Some(occ) = p.material().pbr_metallic_roughness().metallic_roughness_texture() {
+                    occlusion = Some(Self::gltf_get_texture(&occ.texture(), &buffers, filename.as_ref())?);
+                }
 
                 let reader = p.reader(|buffer| Some(&buffers[buffer.index()]));
                 let indices = reader.read_indices().ok_or(
@@ -63,7 +143,7 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
                         tangent: t[..3].try_into()?,
                     });
                 }
-                result.primitives.push(CachedPrimitive {vertices, indices})
+                result.primitives.push(CachedPrimitive {vertices, indices, albedo, normalmap, metal_roughness, occlusion})
             }
         }
 
@@ -72,11 +152,38 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
 
     pub fn from_data(cached: CachedModel<V>, display: &Display)
     -> anyhow::Result<Model<V>> {
+        use glium::texture::{RawImage2d, CompressedSrgbTexture2d, CompressedTexture2d};
+        use anyhow::Context;
         let mut primitives = Vec::new();
+
         for p in cached.primitives {
             primitives.push(Primitive {
                 vertices: VertexBuffer::immutable(display, &p.vertices)?,
                 indices: IndexBuffer::immutable(display, glium::index::PrimitiveType::TrianglesList, &p.indices)?,
+                albedo: if let Some(alb) = p.albedo {
+                    let tex = image::load_from_memory(&alb).context("Failed to load albedo texture")?.to_rgba();
+                    let dims =  tex.dimensions();
+                    let raw_image = RawImage2d::from_raw_rgba(tex.into_raw(), dims);
+                    Some(CompressedSrgbTexture2d::new(display, raw_image).context("Failed to create albedo texture")?)
+                } else { None },
+                normalmap: if let Some(norm) = p.normalmap {
+                    let tex = image::load_from_memory(&norm).context("Failed to load normal map")?.to_rgb();
+                    let dims = tex.dimensions();
+                    let raw_image = RawImage2d::from_raw_rgb(tex.into_raw(), dims);
+                    Some(CompressedTexture2d::new(display, raw_image).context("Failed to create normalmap")?)
+                } else { None },
+                metal_roughness: if let Some(mr) = p.metal_roughness {
+                    let tex = image::load_from_memory(&mr).context("Failed to load metal/roughness map")?.to_rgb();
+                    let dims = tex.dimensions();
+                    let raw_image = RawImage2d::from_raw_rgb(tex.into_raw(), dims);
+                    Some(CompressedTexture2d::new(display, raw_image).context("Failed to create metal/roughness map")?)
+                } else { None },
+                occlusion: if let Some(occ) = p.occlusion {
+                    let tex = image::load_from_memory(&occ).context("Failed to load AO map")?.to_rgb();
+                    let dims = tex.dimensions();
+                    let raw_image = RawImage2d::from_raw_rgb(tex.into_raw(), dims);
+                    Some(CompressedTexture2d::new(display, raw_image).context("Failed to create AO map")?)
+                } else { None },
             });
         }
         Ok(Model {primitives})
@@ -274,7 +381,11 @@ impl<V: serde::Serialize + serde::de::DeserializeOwned + glium::Vertex + Copy> M
                 12, 13, 14, 12, 14, 15, // left
                 16, 17, 18, 16, 18, 19, // top
                 22, 21, 20, 23, 22, 20  // bottom
-            ]
+            ],
+            albedo: None,
+            normalmap: None,
+            metal_roughness: None,
+            occlusion: None,
         }]}, display).expect("Failed to create cube")
     }
 }
