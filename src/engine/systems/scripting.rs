@@ -1,4 +1,5 @@
 use crate::engine::prelude::*;
+use std::sync::Arc;
 use std::collections::{HashMap, HashSet};
 use specs::WriteStorage;
 use crate::engine::components::{ScriptingComponent, MouseComponent, KeyboardComponent};
@@ -15,7 +16,7 @@ pub struct ScriptingSystem {
 impl ScriptingSystem {
     pub fn new() -> ScriptingSystem {
         let mut scope = Scope::new();
-        scope.push("game", GameContext::new());
+        scope.push("game", Arc::new(GameContext::new()));
         ScriptingSystem {
             engine: new_engine(),
             scope,
@@ -24,8 +25,8 @@ impl ScriptingSystem {
         }
     }
 
-    pub fn get_game_context(&self) -> GameContext {
-        self.scope.get_value::<GameContext>("game").unwrap()
+    pub fn get_game_context(&mut self) -> Arc<GameContext> {
+        self.scope.get_value("game").unwrap()
     }
 
     pub fn add_script(&mut self, path: &str) -> bool {
@@ -54,7 +55,6 @@ impl<'a> specs::System<'a> for ScriptingSystem {
     fn run(&mut self, (mut scripts, mut mouses, mut keybs): Self::SystemData) {
         use specs::Join;
 
-        // First call the mouse functions (on_click, etc.)
         for (script, mouse, keyb) in (
         &mut scripts,
         (&mut mouses).maybe(),
@@ -89,6 +89,7 @@ impl<'a> specs::System<'a> for ScriptingSystem {
                 }
             }
 
+            // Call keyboard functions
             if let Some(keyb_some) = keyb {
                 for e in keyb_some.events.drain(..) {
                     match self.engine.call_fn::<(rhai::Map, String, bool), rhai::Map>(
@@ -103,19 +104,49 @@ impl<'a> specs::System<'a> for ScriptingSystem {
                 }
             }
 
+            // Call the mouse functions (lclick, rclick, etc.)
             if let Some(mouse_some) = mouse {
                 if mouse_some.l_is_clicked {
                     mouse_some.l_is_clicked = false;
                     match self.engine.call_fn::<(rhai::Map,), rhai::Map>(
                         &mut self.scope,
                         ast,
-                        "on_lclick",
+                        "lclick",
                         (script.object_self.clone(),),
                     ) {
                         Ok(new_self) => script.object_self = new_self,
                         Err(e) => log::error(&format!("lclick failed: {:?}", e)),
                     }
-                    println!("{:?}", script.object_self);
+                }
+            }
+
+        }
+        // Dispatch events until there are none left
+        let context = self.scope.get_value::<Arc<GameContext>>("game").unwrap();
+        loop {
+            let ev = context.game_event_rx.try_recv();
+            if ev.is_err() {
+                break;
+            }
+            let ev = ev.unwrap();
+
+            let subs = context.get_event_subscribers(&ev.name);
+            if subs.is_none() {
+                continue;
+            }
+            let subs = subs.unwrap();
+
+            for sub in subs {
+                if let Some(subbed_script) = scripts.get_mut(*sub) {
+                    match self.engine.call_fn::<(rhai::Map, rhai::Map), rhai::Map>(
+                        &mut self.scope,
+                        self.loaded_scripts.get(&subbed_script.path).unwrap(),
+                        &ev.name,
+                        (subbed_script.object_self.clone(), ev.args.clone()),
+                    ) {
+                        Ok(new_self) => subbed_script.object_self = new_self,
+                        Err(e) => log::error(&format!("Event {} in entity {:?} failed: {:?}", &ev.name, sub, e)),
+                    }
                 }
             }
         }

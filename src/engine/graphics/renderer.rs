@@ -2,7 +2,9 @@ use crate::engine::prelude::*;
 use glium::glutin::event_loop::EventLoop;
 use glium::{Display, Surface, VertexBuffer};
 use glium::program::Program;
-use glium::texture::{UnsignedTexture2d, Texture2d, pixel_buffer::PixelBuffer};
+use glium::uniforms::{UniformBuffer, UniformValue};
+use glium::texture::{UnsignedTexture2d, Texture2d, pixel_buffer::PixelBuffer, CompressedSrgbTexture2d,
+    CompressedTexture2d};
 use glium::framebuffer::{ColorAttachment, MultiOutputFrameBuffer, DepthRenderBuffer};
 use super::{ModelsManager, Model, TexturesManager, Texture, vertex::{Vertex2d, VertexSkybox}};
 use crate::engine::systems::MeshInstance;
@@ -11,6 +13,49 @@ pub struct Fbos {
     pub color: Texture2d,
     pub pick: UnsignedTexture2d,
     pub depth: DepthRenderBuffer,
+}
+
+struct PointLight {
+    pos: [f32; 3],
+    color: [f32; 3],
+}
+
+struct Lights {
+    pointlights: [PointLight; consts::DEFAULT_MAX_LIGHTS]
+}
+
+struct PbrUniforms<'a> {
+    view: nalgebra::Matrix4<f32>,
+    proj: nalgebra::Matrix4<f32>,
+    albedo: &'a CompressedSrgbTexture2d,
+    metallic_rough: &'a CompressedTexture2d,
+    normal_map: &'a CompressedTexture2d,
+    ao: &'a CompressedTexture2d,
+
+    lights: &'a Lights,
+    camera_position: nalgebra::Point3<f32>,
+    exposure: f32,
+}
+impl<'a> glium::uniforms::Uniforms for PbrUniforms<'a> {
+    fn visit_values<'b, F: FnMut(&str, UniformValue<'b>)>(&'b self, mut f: F) {
+        f("view", UniformValue::Mat4(self.view.into()));
+        f("proj", UniformValue::Mat4(self.proj.into()));
+        let sampler = Some(glium::uniforms::SamplerBehavior{
+            magnify_filter: glium::uniforms::MagnifySamplerFilter::Linear,
+            minify_filter: glium::uniforms::MinifySamplerFilter::LinearMipmapLinear,
+            ..Default::default()
+        });
+        f("albedo", UniformValue::CompressedSrgbTexture2d(self.albedo, sampler));
+        f("metallic_rough", UniformValue::CompressedTexture2d(self.metallic_rough, sampler));
+        f("normal_map", UniformValue::CompressedTexture2d(self.normal_map, sampler));
+        f("ao", UniformValue::CompressedTexture2d(self.ao, sampler));
+        f("cameraPosition", UniformValue::Vec3(point_to_floats(self.camera_position.into())));
+        f("exposure", UniformValue::Float(self.exposure));
+        for i in 0..consts::DEFAULT_MAX_LIGHTS {
+            f(&format!("pointlights[{}].pos", i), UniformValue::Vec3(self.lights.pointlights[i].pos));
+            f(&format!("pointlights[{}].color", i), UniformValue::Vec3(self.lights.pointlights[i].color));
+        }
+    }
 }
 
 rental! {
@@ -29,8 +74,8 @@ pub struct Renderer {
     // Basic singletons
     display: Display,
     resolution: [u32; 2],
-    projection: [[f32; 4]; 4],
-    program_staticmesh: Program,
+    projection: nalgebra::Matrix4<f32>,
+    program_pbr: Program,
     program_skybox: Program,
     program_composition: Program,
     resolution_dependents: rentals::ResolutionDependents,
@@ -42,10 +87,20 @@ pub struct Renderer {
     textures_manager: TexturesManager,
     latest_pick_result: Option<u32>,
     picking_pbo: PixelBuffer<u32>,
+
+    pub light_pos: [f32; 3],
 }
 
 fn matrix_to_floats(m: nalgebra::Matrix4<f32>) -> [[f32; 4]; 4] {
     m.into()
+}
+
+fn vector_to_floats(v: nalgebra::Vector3<f32>) -> [f32; 3] {
+    v.into()
+}
+
+fn point_to_floats(p: nalgebra::Point3<f32>) -> [f32; 3] {
+    p.coords.into()
 }
 
 impl Renderer {
@@ -59,7 +114,7 @@ impl Renderer {
 
     pub fn new(eventloop: &EventLoop<()>) -> Renderer {
         let display = super::window::make_window(eventloop);
-        let program_staticmesh = super::shaders::staticmesh(&display);
+        let program_pbr = super::shaders::pbr(&display);
         let program_composition = super::shaders::composition(&display);
         let program_skybox = super::shaders::static_skybox(&display);
         let resolution = consts::DEFAULT_RESOLUTION;
@@ -105,7 +160,7 @@ impl Renderer {
 
         Renderer {
             display,
-            program_staticmesh,
+            program_pbr,
             program_composition,
             program_skybox,
             models_manager,
@@ -117,12 +172,13 @@ impl Renderer {
             skybox_model,
             picking_pbo,
             resolution,
+            light_pos: [0.4f32, 0.7, 0.25],
             projection: nalgebra::Matrix4::new_perspective(
                 consts::DEFAULT_ASPECT_RATIO,
                 consts::DEFAULT_VERTICAL_FOV_DEG * std::f32::consts::PI / 180.0,
                 consts::DEFAULT_NEAR_CLIP,
                 consts::DEFAULT_FAR_CLIP,
-            ).into()
+            )
         }
     }
 
@@ -155,8 +211,8 @@ impl Renderer {
                 (MultiOutputFrameBuffer::with_depth_buffer(
                     display,
                     [
-                        ("color", ColorAttachment::Texture(fbos.color.main_level().into())),
-                        ("pick", ColorAttachment::Texture(fbos.pick.main_level().into()))
+                        ("fragColor", ColorAttachment::Texture(fbos.color.main_level().into())),
+                        ("fragPick", ColorAttachment::Texture(fbos.pick.main_level().into()))
                     ].iter().cloned(),
                     &fbos.depth
                 ).unwrap(), fbos)
@@ -172,7 +228,7 @@ impl Renderer {
             consts::DEFAULT_VERTICAL_FOV_DEG * std::f32::consts::PI / 180.0,
             consts::DEFAULT_NEAR_CLIP,
             consts::DEFAULT_FAR_CLIP,
-        ).into();
+        );
         self.resolution_dependents = Renderer::build_resolution_dependents(&self.display, dims);
     }
 
@@ -199,7 +255,7 @@ impl Renderer {
 
         // Skybox must be drawn first
         if let Some(sb) = &framebuilder.skybox {
-            if let Texture::Cubemap(cm) = self.textures_manager.get(sb) {
+            if let Some(Texture::Cubemap(cm)) = self.textures_manager.get(sb) {
                 let proj = self.projection;
                 let model = &self.skybox_model;
                 let program = &self.program_skybox;
@@ -219,7 +275,7 @@ impl Renderer {
                         program,
                         &uniform!{
                             view: matrix_to_floats(camera.get_view_at_origin()),
-                            proj: proj,
+                            proj: Into::<[[f32; 4]; 4]>::into(proj),
                             tex: cm.sampled().wrap_function(
                                 // Without this there are weird 1-pixel flashing seams
                                 glium::uniforms::SamplerWrapFunction::BorderClamp),
@@ -243,15 +299,42 @@ impl Renderer {
 
             let model_data = self.models_manager.get(model);
             let ibufslice = self.instance_buffer.slice(0..insts.len()).unwrap();
-            let program = &self.program_staticmesh;
+            let program = &self.program_pbr;
             let proj = self.projection;
+            let texture_manager = &self.textures_manager;
+            
+            let mut lights = Lights {
+                pointlights: [
+                    PointLight {
+                        pos: self.light_pos,
+                        color: [400.0f32, 400.0, 400.0]//[4.5f32, 7.0, 450.0]
+                    },
+                    PointLight {
+                        pos: self.light_pos,
+                        color: [400.0f32, 400.0, 400.0]//[4.5f32, 450.0, 30.0]
+                    },
+                ]
+            };
+            lights.pointlights[1].pos[0] *= -1.0;
+
             self.resolution_dependents.rent_mut(|(fb, _)| {
                 for p in model_data.primitives.iter() {
                     fb.draw(
                         (&p.vertices, ibufslice.per_instance().unwrap()),
                         &p.indices,
                         program,
-                        &uniform!{view: matrix_to_floats(camera.get_view()), proj: proj},
+                        &PbrUniforms {
+                            view: camera.get_view(),
+                            proj: proj,
+                            albedo: &p.albedo.as_ref().unwrap_or(texture_manager.get_default_albedo()),
+                            metallic_rough: &p.metal_roughness.as_ref().unwrap_or(texture_manager.get_default_rough_metal()),
+                            normal_map: &p.normalmap.as_ref().unwrap_or(texture_manager.get_default_normal()),
+                            ao: &p.occlusion.as_ref().unwrap_or(texture_manager.get_default_occ()),
+
+                            lights: &lights,
+                            camera_position: camera.get_world_position(),
+                            exposure: 1.0f32, // between 1 and 3?  
+                        },
                         &params
                     ).unwrap();
                 }

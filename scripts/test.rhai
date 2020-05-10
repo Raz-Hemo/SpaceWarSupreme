@@ -1,9 +1,10 @@
 fn spawn() {
     info("spawned menu");
-    return #{
-
-    };
+    self = game.new_entity();
+    game.subscribe_event("lclick", self.id);
+    return self;
 }
-fn on_lclick(self) {
+
+fn lclick(self) {
     return self;
 }

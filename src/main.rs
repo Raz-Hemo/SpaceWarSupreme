@@ -22,6 +22,7 @@ extern crate sanitize_filename;
 extern crate base64;
 #[macro_use]
 extern crate anyhow;
+extern crate crossbeam_channel;
 
 mod gameplay;
 mod engine;

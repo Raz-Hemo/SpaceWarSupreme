@@ -81,10 +81,24 @@ impl Engine {
     pub fn tick(&mut self) -> TickResult {
         let dt = self.last_tick.elapsed();
         self.last_tick = std::time::Instant::now();
+        let asd = self.input.drain_kb_events();
+        for k in asd.iter() {
+            if k.is_down {
+                match &k.key[..] {
+                    "X" => self.renderer.light_pos[0] += 0.03,
+                    "Y" => self.renderer.light_pos[1] += 0.03,
+                    "Z" => self.renderer.light_pos[2] += 0.03,
+                    "SHIFT+X" => self.renderer.light_pos[0] -= 0.03,
+                    "SHIFT+Y" => self.renderer.light_pos[1] -= 0.03,
+                    "SHIFT+Z" => self.renderer.light_pos[2] -= 0.03,
+                    _ => (),
+                }
+            }
+        }
 
         // Keyboard input
         {
-            self.system_keyboard.new_frame(self.input.drain_kb_events());
+            self.system_keyboard.new_frame(asd);
             let space = self.level.get_active_space();
 
             let mut kbs = space.write_resource::<systems::KeyboardState>();
@@ -100,22 +114,22 @@ impl Engine {
             self.system_scripting.run_now(space);
         }
 
-        for e in self.system_scripting.get_game_context().events.iter() {
-            use crate::engine::scripting::GameEvent;
+        for e in self.system_scripting.get_game_context().engine_event_rx.try_iter() {
+            use crate::engine::scripting::EngineEvent;
             match e {
-                GameEvent::ExitGame => {
+                EngineEvent::ExitGame => {
                     if let Err(e) = self.cfg.dump() {
                         log::error(&format!("{:?}", e));
                     }
                     return TickResult::Exit
                 },
-                GameEvent::ChangeResolution(x, y) => {
-                    self.renderer.resize_window([*x, *y]);
-                    self.cfg.resolution_x = *x;
-                    self.cfg.resolution_y = *y;
+                EngineEvent::ChangeResolution(x, y) => {
+                    self.renderer.resize_window([x, y]);
+                    self.cfg.resolution_x = x;
+                    self.cfg.resolution_y = y;
                 },
-                GameEvent::SetActiveSpace(space) => {
-                    self.level.set_active_space(space);
+                EngineEvent::SetActiveSpace(space) => {
+                    self.level.set_active_space(&space);
                 }
             }
         }
