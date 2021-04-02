@@ -4,9 +4,7 @@
    windows_subsystem = "windows"))]
 
 // External Dependencies
-#[macro_use]
 extern crate glium;
-#[macro_use]
 extern crate rental;
 extern crate specs;
 extern crate nalgebra;
@@ -20,7 +18,6 @@ extern crate serde_json;
 extern crate bincode;
 extern crate sanitize_filename;
 extern crate base64;
-#[macro_use]
 extern crate anyhow;
 extern crate crossbeam_channel;
 
