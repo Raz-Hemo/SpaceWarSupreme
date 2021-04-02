@@ -5,6 +5,7 @@
 
 // External Dependencies
 extern crate glium;
+#[macro_use]
 extern crate rental;
 extern crate specs;
 extern crate nalgebra;

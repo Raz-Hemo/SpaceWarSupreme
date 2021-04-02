@@ -23,6 +23,6 @@ pub fn rand_range<T>(min: T, max: T) -> T
     if min >= max {
         min
     } else {
-        rand::thread_rng().gen_range(min, max)
+        rand::thread_rng().gen_range(min..max)
     }
 }

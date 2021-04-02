@@ -45,15 +45,15 @@ pub fn poisson_distribution(num_cells: usize) -> Vec<(f64, f64)> {
         let mut random_point_idx: (usize, usize) = (0, 0);
 
         // Pick a random existing point i from active list
-        let i: usize = rng.gen_range(0, active_list.len());
+        let i: usize = rng.gen_range(0..active_list.len());
 
         // Try to find a valid point around i (30 tries)
         for _ in 0..30 {
             let mut collision_found = false;
 
             // Generate something in bounds
-            let dist: f64 = rng.gen_range(r, 2.0 * r);
-            let theta: f64 = rng.gen_range(0.0, 2.0 * PI);
+            let dist: f64 = rng.gen_range(r..2.0 * r);
+            let theta: f64 = rng.gen_range(0.0..2.0 * PI);
             random_point_pos = (samples[active_list[i]].0 + dist * theta.cos(), 
                                 samples[active_list[i]].1 + dist * theta.sin());
             if random_point_pos.0 < 0.0 || random_point_pos.1 < 0.0 ||

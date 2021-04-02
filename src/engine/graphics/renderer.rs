@@ -2,12 +2,14 @@ use crate::engine::prelude::*;
 use glium::glutin::event_loop::EventLoop;
 use glium::{Display, Surface, VertexBuffer};
 use glium::program::Program;
-use glium::uniforms::{UniformBuffer, UniformValue};
+use glium::uniforms::UniformValue;
 use glium::texture::{UnsignedTexture2d, Texture2d, pixel_buffer::PixelBuffer, CompressedSrgbTexture2d,
     CompressedTexture2d};
 use glium::framebuffer::{ColorAttachment, MultiOutputFrameBuffer, DepthRenderBuffer};
 use super::{ModelsManager, Model, TexturesManager, Texture, vertex::{Vertex2d, VertexSkybox}};
 use crate::engine::systems::MeshInstance;
+use glium::uniform;
+use rental::rental;
 
 pub struct Fbos {
     pub color: Texture2d,
@@ -379,8 +381,12 @@ impl Renderer {
     }
 
     pub fn get_supported_resolutions(&self) -> Vec<[u32; 2]> {
-        let max_size = self.get_display().gl_window().window().current_monitor().size();
-        vec![[max_size.width as u32, max_size.height as u32]]
+        let max_size = self.get_display().gl_window().window().current_monitor().map(|mon| mon.size());
+        if let Some(max_size) = max_size {
+            vec![[max_size.width as u32, max_size.height as u32]]
+        } else {
+            vec![[800, 600]]
+        }
     }
 
     pub fn load_model(&mut self, m: &str) -> anyhow::Result<()> {
