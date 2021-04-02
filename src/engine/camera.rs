@@ -17,13 +17,12 @@ impl Camera {
 
 impl crate::engine::scripting::interpolate::Interpolate for Camera {
     fn get(&self, other: &Camera, alpha: f32) -> Camera {
-        let result = Camera {
+        Camera {
             quat: self.quat.try_slerp(&other.quat, alpha, 0.0001).unwrap_or(
                 other.quat
             ),
             pos: self.pos + (other.pos - self.pos) * alpha,
-        };
-        result
+        }
     }
 }
 

@@ -56,7 +56,7 @@ impl CircularLog {
         let log_line = CircularLogLine {
             line: format!("{} {} - {}", 
                           time_str, log_level_str, line),
-            level: level,
+            level,
         };
         println!("{}", log_line.line);
 

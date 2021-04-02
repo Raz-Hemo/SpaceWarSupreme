@@ -9,10 +9,9 @@ pub fn error_msgbox(message: &str) {
                     .stdin(std::process::Stdio::piped())
                     .spawn() {
             if let Some(stdin) = p.stdin.as_mut() {
-                if stdin.write_all(message.as_bytes()).is_ok() {
-                    if p.wait().is_err() {
+                if stdin.write_all(message.as_bytes()).is_ok()
+                    && p.wait().is_err() {
                         // nothing to do here.
-                    }
                 }
             }
         }

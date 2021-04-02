@@ -1,14 +1,14 @@
 use crate::engine::prelude::*;
 
-pub fn error(x: String) -> () {
+pub fn error(x: String) {
     log::error(&x);
 }
 
-pub fn warning(x: String) -> () {
+pub fn warning(x: String) {
     log::warning(&x);
 }
 
-pub fn info(x: String) -> () {
+pub fn info(x: String) {
     log::info(&x);
 }
 
